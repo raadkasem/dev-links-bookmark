@@ -498,6 +498,16 @@ function setupCredsToggle(overlay) {
     toggle.classList.add("open");
   }
 
+  // Branch — extract name from repo URL if pasted
+  const branchInput = overlay.querySelector("#modal-link-branch");
+  if (branchInput) {
+    branchInput.addEventListener("input", () => {
+      const val = branchInput.value.trim();
+      const branch = extractBranchFromUrl(val);
+      if (branch) branchInput.value = branch;
+    });
+  }
+
   // Password show/hide
   const pwToggle = overlay.querySelector(".password-toggle");
   const pwInput = overlay.querySelector("#modal-link-password");
@@ -510,6 +520,31 @@ function setupCredsToggle(overlay) {
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     });
   }
+}
+
+function extractBranchFromUrl(val) {
+  try {
+    const u = new URL(val);
+    const host = u.hostname;
+
+    // GitHub: /user/repo/tree/branch-name
+    // GitLab: /user/repo/-/tree/branch-name
+    // Bitbucket: /user/repo/src/branch-name
+    let match;
+    if (host.includes("github")) {
+      match = u.pathname.match(/\/[^/]+\/[^/]+\/tree\/(.+)/);
+    } else if (host.includes("gitlab")) {
+      match = u.pathname.match(/\/[^/]+\/[^/]+\/-\/tree\/(.+)/);
+    } else if (host.includes("bitbucket")) {
+      match = u.pathname.match(/\/[^/]+\/[^/]+\/src\/(.+)/);
+    }
+
+    if (match && match[1]) {
+      // Remove trailing slashes or file paths after branch
+      return match[1].split("/")[0] || match[1];
+    }
+  } catch {}
+  return null;
 }
 
 function copyWithFeedback(btn, text) {
