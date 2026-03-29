@@ -339,9 +339,12 @@ h1 em {
   color: var(--text);
 }
 
+.group-menu-item.danger {
+  color: var(--red);
+}
+
 .group-menu-item.danger:hover {
   background: var(--red-soft);
-  color: var(--red);
 }
 
 .group-menu-item.disabled {
@@ -461,8 +464,11 @@ h1 em {
   background: var(--accent-soft);
 }
 
-.link-action-btn.danger:hover {
+.link-action-btn.danger {
   color: var(--red);
+}
+
+.link-action-btn.danger:hover {
   background: var(--red-soft);
 }
 
