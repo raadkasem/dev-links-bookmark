@@ -584,26 +584,20 @@ h1 em {
   text-overflow: ellipsis;
 }
 
-.cred-pw-actions {
-  display: flex;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.cred-pw-actions button {
+.cred-reveal-inline {
   background: none;
   border: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  padding: 3px;
+  padding: 2px;
   border-radius: 3px;
   display: flex;
-  transition: all 0.15s;
+  flex-shrink: 0;
+  transition: color 0.15s;
 }
 
-.cred-pw-actions button:hover {
-  color: var(--accent);
-  background: var(--accent-soft);
+.cred-reveal-inline:hover {
+  color: var(--text);
 }
 
 .cred-branch {

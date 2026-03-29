@@ -146,11 +146,9 @@ function render(filter = "") {
                     <span class="cred-label">Pass</span>
                     <span class="cred-value cred-password-wrap" data-pw="${esc(l.password)}">
                       <span class="cred-pw-text">••••••••</span>
-                      <span class="cred-pw-actions">
-                        <button class="cred-reveal" title="Reveal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                        <button class="cred-copy" data-copy="${esc(l.password)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                      </span>
+                      <button class="cred-reveal-inline" title="Reveal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     </span>
+                    <button class="cred-copy" data-copy="${esc(l.password)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                   </div>` : ""}
                   ${l.branch ? `<div class="cred-row">
                     <span class="cred-label">Branch</span>
@@ -421,7 +419,7 @@ function attachGroupEvents() {
   });
 
   // Password reveal
-  document.querySelectorAll(".cred-reveal").forEach((btn) => {
+  document.querySelectorAll(".cred-reveal-inline").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const wrap = btn.closest(".cred-password-wrap");
