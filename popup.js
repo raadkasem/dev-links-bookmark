@@ -743,24 +743,31 @@ function showImportModal(groups) {
 
   const overlay = showModal(`
     <h2>Import Links</h2>
-    <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">
+    <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">
       Found <strong>${groupCount}</strong> group${groupCount !== 1 ? "s" : ""} with <strong>${linkCount}</strong> link${linkCount !== 1 ? "s" : ""}.
     </p>
-    <div class="modal-field">
-      <label>Import mode</label>
-      <select id="modal-import-mode">
-        <option value="append">Append — add to existing data</option>
-        <option value="replace">Replace — overwrite all current data</option>
-      </select>
+    <div class="import-mode-btns">
+      <button class="import-mode-btn" id="import-append">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span class="import-mode-title">Append</span>
+        <span class="import-mode-desc">Add to existing data</span>
+      </button>
+      <button class="import-mode-btn import-mode-danger" id="import-replace">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        <span class="import-mode-title">Replace</span>
+        <span class="import-mode-desc">Overwrite all current data</span>
+      </button>
     </div>
     <div class="modal-actions">
       <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
-      <button class="modal-btn primary" id="modal-import">Import</button>
     </div>`);
 
   overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
-  overlay.querySelector("#modal-import").addEventListener("click", () => {
-    const mode = overlay.querySelector("#modal-import-mode").value;
+
+  overlay.querySelector("#import-append").addEventListener("click", () => { doImport("append"); });
+  overlay.querySelector("#import-replace").addEventListener("click", () => { doImport("replace"); });
+
+  function doImport(mode) {
 
     if (mode === "replace") {
       data.groups = groups.map((g) => ({

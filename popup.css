@@ -949,6 +949,56 @@ h1 em {
   background: var(--bg);
 }
 
+/* ── Import mode buttons ── */
+.import-mode-btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.import-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--accent);
+  font-family: inherit;
+}
+
+.import-mode-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.import-mode-btn.import-mode-danger {
+  color: var(--red);
+}
+
+.import-mode-btn.import-mode-danger:hover {
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+
+.import-mode-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.import-mode-desc {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.3;
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
