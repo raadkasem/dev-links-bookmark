@@ -132,7 +132,7 @@ function render(filter = "") {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
                     <button class="link-action-btn danger" data-action="delete-link" data-group="${group.id}" data-link="${l.id}" title="Delete">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>` : ""}
                   </div>
                 </div>
@@ -313,9 +313,26 @@ function attachGroupEvents() {
       e.stopPropagation();
       const group = data.groups.find((g) => g.id === btn.dataset.group);
       if (!group) return;
-      group.links = group.links.filter((l) => l.id !== btn.dataset.link);
-      save();
-      render(document.getElementById("search-input").value);
+      const link = group.links.find((l) => l.id === btn.dataset.link);
+      if (!link) return;
+
+      const overlay = showModal(`
+        <h2>Delete Link?</h2>
+        <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px">
+          Are you sure you want to delete <strong>${esc(link.name)}</strong>?
+        </p>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+          <button class="modal-btn primary" id="modal-confirm" style="background:var(--red);box-shadow:0 1px 3px rgba(220,38,38,0.3)">Delete</button>
+        </div>`);
+
+      overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+      overlay.querySelector("#modal-confirm").addEventListener("click", () => {
+        group.links = group.links.filter((l) => l.id !== btn.dataset.link);
+        save();
+        render(document.getElementById("search-input").value);
+        overlay.remove();
+      });
     });
   });
 
@@ -498,16 +515,6 @@ function setupCredsToggle(overlay) {
     toggle.classList.add("open");
   }
 
-  // Branch — extract name from repo URL if pasted
-  const branchInput = overlay.querySelector("#modal-link-branch");
-  if (branchInput) {
-    branchInput.addEventListener("input", () => {
-      const val = branchInput.value.trim();
-      const branch = extractBranchFromUrl(val);
-      if (branch) branchInput.value = branch;
-    });
-  }
-
   // Password show/hide
   const pwToggle = overlay.querySelector(".password-toggle");
   const pwInput = overlay.querySelector("#modal-link-password");
@@ -520,31 +527,6 @@ function setupCredsToggle(overlay) {
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     });
   }
-}
-
-function extractBranchFromUrl(val) {
-  try {
-    const u = new URL(val);
-    const host = u.hostname;
-
-    // GitHub: /user/repo/tree/branch-name
-    // GitLab: /user/repo/-/tree/branch-name
-    // Bitbucket: /user/repo/src/branch-name
-    let match;
-    if (host.includes("github")) {
-      match = u.pathname.match(/\/[^/]+\/[^/]+\/tree\/(.+)/);
-    } else if (host.includes("gitlab")) {
-      match = u.pathname.match(/\/[^/]+\/[^/]+\/-\/tree\/(.+)/);
-    } else if (host.includes("bitbucket")) {
-      match = u.pathname.match(/\/[^/]+\/[^/]+\/src\/(.+)/);
-    }
-
-    if (match && match[1]) {
-      // Remove trailing slashes or file paths after branch
-      return match[1].split("/")[0] || match[1];
-    }
-  } catch {}
-  return null;
 }
 
 function copyWithFeedback(btn, text) {
@@ -827,8 +809,8 @@ function showAddLinkModal(groupId) {
         </div>
       </div>
       <div class="modal-field">
-        <label>Branch</label>
-        <input type="text" id="modal-link-branch" placeholder="e.g. develop" list="branch-suggestions">
+        <label>Repo / Branch</label>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
     <div class="modal-actions">
@@ -904,7 +886,7 @@ function showEditLinkModal(groupId, linkId) {
         </div>
       </div>
       <div class="modal-field">
-        <label>Branch</label>
+        <label>Repo / Branch</label>
         <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}" list="branch-suggestions">
       </div>
     </div>
@@ -996,8 +978,8 @@ function showSaveTabModal(title, url) {
         </div>
       </div>
       <div class="modal-field">
-        <label>Branch</label>
-        <input type="text" id="modal-link-branch" placeholder="e.g. develop" list="branch-suggestions">
+        <label>Repo / Branch</label>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
     <div class="modal-field">

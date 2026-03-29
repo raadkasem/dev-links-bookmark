@@ -666,7 +666,7 @@ h1 em {
   align-items: center;
   gap: 6px;
   padding: 10px 0;
-  margin: 4px 0 10px;
+  margin: 4px 0 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -674,7 +674,6 @@ h1 em {
   user-select: none;
   transition: color 0.15s;
   border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
 }
 
 .modal-section-toggle:hover {
@@ -696,8 +695,17 @@ h1 em {
 .modal-creds-section {
   padding: 10px 0 6px 14px;
   border-left: 2px solid var(--border-light);
-  margin: 4px 0 10px 6px;
+  margin: 4px 0 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
   animation: fadeSlideIn 0.15s ease;
+}
+
+.modal-creds-section.hidden + .modal-field {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .modal-creds-section .modal-field {
