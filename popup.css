@@ -389,6 +389,10 @@ h1 em {
   cursor: grab;
 }
 
+.link-row {
+  cursor: pointer;
+}
+
 .link-row:hover {
   background: var(--bg);
 }

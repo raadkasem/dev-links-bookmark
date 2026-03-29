@@ -418,6 +418,17 @@ function attachGroupEvents() {
     });
   });
 
+  // Click link row to expand credentials
+  document.querySelectorAll(".link-row").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".link-action-btn") || e.target.closest("button")) return;
+      const item = row.closest(".link-item");
+      if (!item) return;
+      const credsEl = item.querySelector(".link-creds");
+      if (credsEl) credsEl.classList.toggle("hidden");
+    });
+  });
+
   // Credentials toggle
   document.querySelectorAll(".link-creds-toggle").forEach((btn) => {
     btn.addEventListener("click", (e) => {
