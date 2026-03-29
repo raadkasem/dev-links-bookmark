@@ -472,8 +472,11 @@ h1 em {
   background: var(--red-soft);
 }
 
-.link-open-btn:hover {
+.link-open-btn {
   color: var(--green);
+}
+
+.link-open-btn:hover {
   background: var(--green-soft);
 }
 
