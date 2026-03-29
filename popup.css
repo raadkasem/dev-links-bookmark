@@ -569,8 +569,41 @@ h1 em {
   min-width: 0;
 }
 
-.cred-password {
+.cred-password-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px !important;
+}
+
+.cred-pw-text {
+  flex: 1;
   letter-spacing: 1px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cred-pw-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.cred-pw-actions button {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 3px;
+  display: flex;
+  transition: all 0.15s;
+}
+
+.cred-pw-actions button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .cred-branch {

@@ -144,9 +144,13 @@ function render(filter = "") {
                   </div>` : ""}
                   ${l.password ? `<div class="cred-row">
                     <span class="cred-label">Pass</span>
-                    <span class="cred-value cred-password" data-pw="${esc(l.password)}">••••••••</span>
-                    <button class="cred-reveal" title="Reveal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                    <button class="cred-copy" data-copy="${esc(l.password)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <span class="cred-value cred-password-wrap" data-pw="${esc(l.password)}">
+                      <span class="cred-pw-text">••••••••</span>
+                      <span class="cred-pw-actions">
+                        <button class="cred-reveal" title="Reveal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button class="cred-copy" data-copy="${esc(l.password)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                      </span>
+                    </span>
                   </div>` : ""}
                   ${l.branch ? `<div class="cred-row">
                     <span class="cred-label">Branch</span>
@@ -420,10 +424,11 @@ function attachGroupEvents() {
   document.querySelectorAll(".cred-reveal").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const valEl = btn.parentElement.querySelector(".cred-password");
-      if (!valEl) return;
-      const isHidden = valEl.textContent === "••••••••";
-      valEl.textContent = isHidden ? valEl.dataset.pw : "••••••••";
+      const wrap = btn.closest(".cred-password-wrap");
+      if (!wrap) return;
+      const textEl = wrap.querySelector(".cred-pw-text");
+      const isHidden = textEl.textContent === "••••••••";
+      textEl.textContent = isHidden ? wrap.dataset.pw : "••••••••";
       btn.innerHTML = isHidden
         ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
         : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
