@@ -813,6 +813,33 @@ h1 em {
   box-shadow: 0 0 0 2px rgba(109, 91, 208, 0.08);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 36px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  transition: color 0.15s;
+}
+
+.password-toggle:hover {
+  color: var(--text);
+}
+
 .field-error {
   font-size: 11px;
   color: var(--red);
