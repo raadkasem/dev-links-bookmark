@@ -1,0 +1,871 @@
+const GROUP_COLORS = [
+  "#6D5BD0", "#2563EB", "#0891B2", "#16A34A",
+  "#D97706", "#DC2626", "#DB2777", "#7C3AED",
+];
+
+let data = { groups: [] };
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const stored = await chrome.storage.local.get("devlinks");
+  if (stored.devlinks) data = stored.devlinks;
+
+  render();
+  setupListeners();
+});
+
+function save() {
+  chrome.storage.local.set({ devlinks: data });
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function isValidUrl(str) {
+  try {
+    const u = new URL(str);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function showFieldError(input, msg) {
+  input.style.borderColor = "var(--red)";
+  input.style.boxShadow = "0 0 0 2px rgba(220,38,38,0.1)";
+  let err = input.parentElement.querySelector(".field-error");
+  if (!err) {
+    err = document.createElement("div");
+    err.className = "field-error";
+    input.parentElement.appendChild(err);
+  }
+  err.textContent = msg;
+  input.addEventListener("input", () => {
+    input.style.borderColor = "";
+    input.style.boxShadow = "";
+    if (err) err.remove();
+  }, { once: true });
+}
+
+function faviconUrl(url) {
+  try {
+    const u = new URL(url);
+    return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+  } catch {
+    return "";
+  }
+}
+
+// ── Render ──
+
+function render(filter = "") {
+  const container = document.getElementById("groups-container");
+  const q = filter.toLowerCase().trim();
+
+  if (data.groups.length === 0 && !q) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <div>No groups yet.<br>Create one to start organizing your links.</div>
+      </div>`;
+    return;
+  }
+
+  let html = "";
+  for (const group of data.groups) {
+    const filteredLinks = q
+      ? group.links.filter(
+          (l) =>
+            l.name.toLowerCase().includes(q) ||
+            l.url.toLowerCase().includes(q)
+        )
+      : group.links;
+
+    const groupMatches = group.name.toLowerCase().includes(q);
+
+    if (q && !groupMatches && filteredLinks.length === 0) continue;
+
+    const links = q && !groupMatches ? filteredLinks : group.links;
+    const collapsed = q ? false : group.collapsed;
+
+    html += `
+      <div class="group ${collapsed ? "collapsed" : ""}" data-id="${group.id}" draggable="true">
+        <div class="group-header">
+          <svg class="group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <div class="group-color" style="background:${group.color}"></div>
+          <span class="group-name">${esc(group.name)}</span>
+          ${group.locked ? `<svg class="group-lock-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>` : ""}
+          <span class="group-count">${group.links.length}</span>
+          <div style="position:relative">
+            <button class="group-menu-btn" data-id="${group.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="group-body">
+          <div class="links-list">
+            ${links
+              .map(
+                (l) => `
+              <div class="link-item" data-group="${group.id}" data-link="${l.id}">
+                <div class="link-row" draggable="true">
+                  <img class="link-favicon" src="${faviconUrl(l.url)}" alt="" onerror="this.style.display='none'">
+                  <div class="link-info">
+                    <div class="link-name">${esc(l.name)}</div>
+                    <div class="link-url">${esc(l.url)}</div>
+                  </div>
+                  <div class="link-actions">
+                    ${l.note ? `<button class="link-action-btn link-note-toggle" data-link="${l.id}" title="Show note">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </button>` : ""}
+                    <button class="link-action-btn link-open-btn" data-url="${esc(l.url)}" title="Open">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </button>
+                    ${!group.locked ? `<button class="link-action-btn" data-action="edit-link" data-group="${group.id}" data-link="${l.id}" title="Edit">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="link-action-btn danger" data-action="delete-link" data-group="${group.id}" data-link="${l.id}" title="Delete">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>` : ""}
+                  </div>
+                </div>
+                ${l.note ? `<div class="link-note hidden" data-note-for="${l.id}">
+                  <div class="link-note-content">${esc(l.note)}</div>
+                  <button class="link-note-copy" data-copy="${esc(l.note)}" title="Copy note">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>` : ""}
+              </div>`
+              )
+              .join("")}
+          </div>
+          ${!group.locked ? `<div class="add-link-row">
+            <button class="add-link-btn" data-group="${group.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add link
+            </button>
+          </div>` : ""}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = html || '<div class="empty-state">No results found.</div>';
+  attachGroupEvents();
+}
+
+function esc(str) {
+  const el = document.createElement("span");
+  el.textContent = str;
+  return el.innerHTML;
+}
+
+// ── Event listeners ──
+
+function setupListeners() {
+  // External links
+  document.querySelectorAll("a[target='_blank']").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: link.href });
+    });
+  });
+
+  // Search
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    render(e.target.value);
+  });
+
+  // Add group
+  document.getElementById("add-group-btn").addEventListener("click", () => {
+    const group = {
+      id: uid(),
+      name: "New Group",
+      color: GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
+      collapsed: false,
+      links: [],
+    };
+    data.groups.push(group);
+    save();
+    render();
+
+    // Auto-focus rename
+    setTimeout(() => {
+      const nameEl = document.querySelector(`.group[data-id="${group.id}"] .group-name`);
+      if (nameEl) startRenameGroup(group.id, nameEl);
+    }, 50);
+  });
+
+  // Save current tab
+  document.getElementById("save-tab-btn").addEventListener("click", async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url) return;
+    showSaveTabModal(tab.title || "", tab.url);
+  });
+
+  // Import
+  document.getElementById("import-btn").addEventListener("click", () => {
+    document.getElementById("import-file").click();
+  });
+
+  document.getElementById("import-file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = JSON.parse(text);
+      let groups;
+      if (imported.devlinks?.groups) {
+        groups = imported.devlinks.groups;
+      } else if (imported.groups) {
+        groups = imported.groups;
+      } else {
+        alert("Invalid file format.");
+        return;
+      }
+      showImportModal(groups);
+    } catch {
+      alert("Invalid file format.");
+    }
+    e.target.value = "";
+  });
+
+  // Export
+  document.getElementById("export-btn").addEventListener("click", () => {
+    exportData();
+  });
+
+  // Close menus on outside click
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".group-menu") && !e.target.closest(".group-menu-btn")) {
+      document.querySelectorAll(".group-menu").forEach((m) => m.remove());
+    }
+  });
+}
+
+function attachGroupEvents() {
+  // Toggle collapse
+  document.querySelectorAll(".group-header").forEach((header) => {
+    header.addEventListener("click", (e) => {
+      if (e.target.closest(".group-menu-btn") || e.target.closest(".group-menu")) return;
+      const groupEl = header.closest(".group");
+      const id = groupEl.dataset.id;
+      const group = data.groups.find((g) => g.id === id);
+      if (!group) return;
+      group.collapsed = !group.collapsed;
+      groupEl.classList.toggle("collapsed");
+      save();
+    });
+  });
+
+  // Group menu
+  document.querySelectorAll(".group-menu-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".group-menu").forEach((m) => m.remove());
+      showGroupMenu(btn, btn.dataset.id);
+    });
+  });
+
+  // Open link
+  document.querySelectorAll(".link-open-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      chrome.tabs.create({ url: btn.dataset.url });
+    });
+  });
+
+  // Edit link
+  document.querySelectorAll('[data-action="edit-link"]').forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showEditLinkModal(btn.dataset.group, btn.dataset.link);
+    });
+  });
+
+  // Delete link
+  document.querySelectorAll('[data-action="delete-link"]').forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const group = data.groups.find((g) => g.id === btn.dataset.group);
+      if (!group) return;
+      group.links = group.links.filter((l) => l.id !== btn.dataset.link);
+      save();
+      render(document.getElementById("search-input").value);
+    });
+  });
+
+  // Add link
+  document.querySelectorAll(".add-link-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      showAddLinkModal(btn.dataset.group);
+    });
+  });
+
+  // Drag and drop — groups
+  document.querySelectorAll(".group[draggable]").forEach((el) => {
+    el.addEventListener("dragstart", (e) => {
+      if (e.target.closest(".link-row")) return;
+      e.dataTransfer.setData("text/group-id", el.dataset.id);
+      el.style.opacity = "0.4";
+    });
+    el.addEventListener("dragend", () => {
+      el.style.opacity = "";
+    });
+    el.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.types.includes("text/group-id")) {
+        el.classList.add("drag-over");
+      }
+    });
+    el.addEventListener("dragleave", () => {
+      el.classList.remove("drag-over");
+    });
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("drag-over");
+      const dragId = e.dataTransfer.getData("text/group-id");
+      if (!dragId || dragId === el.dataset.id) return;
+      const fromIdx = data.groups.findIndex((g) => g.id === dragId);
+      const toIdx = data.groups.findIndex((g) => g.id === el.dataset.id);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [moved] = data.groups.splice(fromIdx, 1);
+      data.groups.splice(toIdx, 0, moved);
+      save();
+      render(document.getElementById("search-input").value);
+    });
+  });
+
+  // Drag and drop — links
+  document.querySelectorAll(".link-item").forEach((item) => {
+    const row = item.querySelector(".link-row[draggable]");
+    if (!row) return;
+    const groupId = item.dataset.group;
+    const linkId = item.dataset.link;
+
+    row.addEventListener("dragstart", (e) => {
+      e.stopPropagation();
+      e.dataTransfer.setData("text/link-data", JSON.stringify({ groupId, linkId }));
+      row.classList.add("dragging");
+    });
+    row.addEventListener("dragend", () => {
+      row.classList.remove("dragging");
+    });
+    item.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+    item.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const raw = e.dataTransfer.getData("text/link-data");
+      if (!raw) return;
+      const { groupId: fromGroupId, linkId: dragLinkId } = JSON.parse(raw);
+
+      const fromGroup = data.groups.find((g) => g.id === fromGroupId);
+      const toGroup = data.groups.find((g) => g.id === groupId);
+      if (!fromGroup || !toGroup) return;
+
+      const fromIdx = fromGroup.links.findIndex((l) => l.id === dragLinkId);
+      if (fromIdx < 0) return;
+      const [link] = fromGroup.links.splice(fromIdx, 1);
+
+      const toIdx = toGroup.links.findIndex((l) => l.id === linkId);
+      toGroup.links.splice(toIdx >= 0 ? toIdx : toGroup.links.length, 0, link);
+
+      save();
+      render(document.getElementById("search-input").value);
+    });
+  });
+
+  // Note toggle
+  document.querySelectorAll(".link-note-toggle").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const noteEl = document.querySelector(`.link-note[data-note-for="${btn.dataset.link}"]`);
+      if (noteEl) noteEl.classList.toggle("hidden");
+    });
+  });
+
+  // Note copy
+  document.querySelectorAll(".link-note-copy").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => {
+          btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+        }, 1500);
+      });
+    });
+  });
+}
+
+// ── Group menu ──
+
+function showGroupMenu(btn, groupId) {
+  const group = data.groups.find((g) => g.id === groupId);
+  if (!group) return;
+
+  const isLocked = group.locked;
+  const hasLinks = group.links.length > 0;
+
+  const menu = document.createElement("div");
+  menu.className = "group-menu";
+  menu.innerHTML = `
+    ${!isLocked ? `<button class="group-menu-item" data-action="rename">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Rename
+    </button>` : ""}
+    <button class="group-menu-item" data-action="open-all">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open all links
+    </button>
+    <button class="group-menu-item" data-action="export-group">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Export group
+    </button>
+    <div class="group-menu-sep"></div>
+    <button class="group-menu-item" data-action="toggle-lock">
+      ${isLocked
+        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+      Unlock group`
+        : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Lock group`}
+    </button>
+    ${!isLocked ? `<button class="group-menu-item danger" data-action="delete">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      Delete group
+    </button>` : ""}`;
+
+  document.body.appendChild(menu);
+
+  const rect = btn.getBoundingClientRect();
+  const menuHeight = menu.offsetHeight;
+  const viewportHeight = document.documentElement.clientHeight;
+
+  let top = rect.bottom + 4;
+  if (top + menuHeight > viewportHeight) {
+    top = rect.top - menuHeight - 4;
+  }
+
+  menu.style.top = top + "px";
+  menu.style.right = (document.documentElement.clientWidth - rect.right) + "px";
+
+  const renameBtn = menu.querySelector('[data-action="rename"]');
+  if (renameBtn) {
+    renameBtn.addEventListener("click", () => {
+      menu.remove();
+      const nameEl = document.querySelector(`.group[data-id="${groupId}"] .group-name`);
+      if (nameEl) startRenameGroup(groupId, nameEl);
+    });
+  }
+
+  menu.querySelector('[data-action="open-all"]').addEventListener("click", () => {
+    menu.remove();
+    group.links.forEach((l) => chrome.tabs.create({ url: l.url }));
+  });
+
+  menu.querySelector('[data-action="export-group"]').addEventListener("click", () => {
+    menu.remove();
+    exportGroup(group);
+  });
+
+  menu.querySelector('[data-action="toggle-lock"]').addEventListener("click", () => {
+    menu.remove();
+    group.locked = !group.locked;
+    save();
+    render(document.getElementById("search-input").value);
+  });
+
+  const deleteBtn = menu.querySelector('[data-action="delete"]');
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", () => {
+      menu.remove();
+      if (hasLinks) {
+        showConfirmModal(
+          `Delete "${group.name}"?`,
+          `This group has ${group.links.length} link${group.links.length > 1 ? "s" : ""}. This action cannot be undone.`,
+          () => {
+            data.groups = data.groups.filter((g) => g.id !== groupId);
+            save();
+            render();
+          },
+          () => {
+            exportGroup(group);
+            data.groups = data.groups.filter((g) => g.id !== groupId);
+            save();
+            render();
+          }
+        );
+      } else {
+        data.groups = data.groups.filter((g) => g.id !== groupId);
+        save();
+        render();
+      }
+    });
+  }
+}
+
+function startRenameGroup(groupId, nameEl) {
+  const group = data.groups.find((g) => g.id === groupId);
+  if (!group) return;
+
+  const input = document.createElement("input");
+  input.className = "group-name-input";
+  input.value = group.name;
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const finish = () => {
+    const val = input.value.trim() || "Untitled";
+    group.name = val;
+    save();
+    render(document.getElementById("search-input").value);
+  };
+
+  input.addEventListener("blur", finish);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+    if (e.key === "Escape") {
+      input.value = group.name;
+      input.blur();
+    }
+  });
+}
+
+// ── Modals ──
+
+function showModal(content) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `<div class="modal">${content}</div>`;
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  return overlay;
+}
+
+function showConfirmModal(title, message, onConfirm, onExportDelete) {
+  const overlay = showModal(`
+    <h2>${title}</h2>
+    <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px">${message}</p>
+    <div class="modal-field" style="margin-top:12px">
+      <label>Type <strong style="color:var(--red)">Delete</strong> to confirm</label>
+      <input type="text" id="modal-confirm-input" placeholder="Delete" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-export-delete" style="background:var(--amber);box-shadow:0 1px 3px rgba(217,119,6,0.3)" disabled>Export → Delete</button>
+      <button class="modal-btn primary" id="modal-confirm" style="background:var(--red);box-shadow:0 1px 3px rgba(220,38,38,0.3)" disabled>Delete</button>
+    </div>`);
+
+  const input = overlay.querySelector("#modal-confirm-input");
+  const confirmBtn = overlay.querySelector("#modal-confirm");
+  const exportDeleteBtn = overlay.querySelector("#modal-export-delete");
+
+  input.focus();
+  input.addEventListener("input", () => {
+    const match = input.value.trim().toLowerCase() === "delete";
+    confirmBtn.disabled = !match;
+    exportDeleteBtn.disabled = !match;
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !confirmBtn.disabled) confirmBtn.click();
+  });
+
+  overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+  exportDeleteBtn.addEventListener("click", () => {
+    overlay.remove();
+    onExportDelete();
+  });
+  confirmBtn.addEventListener("click", () => {
+    overlay.remove();
+    onConfirm();
+  });
+}
+
+function showImportModal(groups) {
+  const groupCount = groups.length;
+  const linkCount = groups.reduce((s, g) => s + g.links.length, 0);
+
+  const overlay = showModal(`
+    <h2>Import Links</h2>
+    <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">
+      Found <strong>${groupCount}</strong> group${groupCount !== 1 ? "s" : ""} with <strong>${linkCount}</strong> link${linkCount !== 1 ? "s" : ""}.
+    </p>
+    <div class="modal-field">
+      <label>Import mode</label>
+      <select id="modal-import-mode">
+        <option value="append">Append — add to existing data</option>
+        <option value="replace">Replace — overwrite all current data</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-import">Import</button>
+    </div>`);
+
+  overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#modal-import").addEventListener("click", () => {
+    const mode = overlay.querySelector("#modal-import-mode").value;
+
+    if (mode === "replace") {
+      data.groups = groups.map((g) => ({
+        id: uid(),
+        name: g.name,
+        color: g.color || GROUP_COLORS[0],
+        collapsed: false,
+        locked: false,
+        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.note) o.note = l.note; return o; }),
+      }));
+    } else {
+      for (const g of groups) {
+        data.groups.push({
+          id: uid(),
+          name: g.name,
+          color: g.color || GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
+          collapsed: false,
+          locked: false,
+          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.note) o.note = l.note; return o; }),
+        });
+      }
+    }
+
+    save();
+    render();
+    overlay.remove();
+  });
+}
+
+function showAddLinkModal(groupId) {
+  const overlay = showModal(`
+    <h2>Add Link</h2>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="modal-link-name" placeholder="e.g. Admin Dashboard">
+    </div>
+    <div class="modal-field">
+      <label>URL</label>
+      <input type="url" id="modal-link-url" placeholder="https://...">
+    </div>
+    <div class="modal-field">
+      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
+      <textarea id="modal-link-note" placeholder="e.g. user: admin / pass: ****" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-save">Add</button>
+    </div>`);
+
+  const nameInput = overlay.querySelector("#modal-link-name");
+  const urlInput = overlay.querySelector("#modal-link-url");
+  const noteInput = overlay.querySelector("#modal-link-note");
+  nameInput.focus();
+
+  overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#modal-save").addEventListener("click", () => {
+    const name = nameInput.value.trim();
+    const url = urlInput.value.trim();
+    const note = noteInput.value.trim();
+    if (!name) { showFieldError(nameInput, "Name is required"); return; }
+    if (!url) { showFieldError(urlInput, "URL is required"); return; }
+    if (!isValidUrl(url)) { showFieldError(urlInput, "Enter a valid URL (https://...)"); return; }
+    const group = data.groups.find((g) => g.id === groupId);
+    if (!group) return;
+    const link = { id: uid(), name, url };
+    if (note) link.note = note;
+    group.links.push(link);
+    save();
+    render(document.getElementById("search-input").value);
+    overlay.remove();
+  });
+
+  urlInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") overlay.querySelector("#modal-save").click();
+  });
+}
+
+function showEditLinkModal(groupId, linkId) {
+  const group = data.groups.find((g) => g.id === groupId);
+  if (!group) return;
+  const link = group.links.find((l) => l.id === linkId);
+  if (!link) return;
+
+  const overlay = showModal(`
+    <h2>Edit Link</h2>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="modal-link-name" value="${esc(link.name)}">
+    </div>
+    <div class="modal-field">
+      <label>URL</label>
+      <input type="url" id="modal-link-url" value="${esc(link.url)}">
+    </div>
+    <div class="modal-field">
+      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
+      <textarea id="modal-link-note" rows="2">${esc(link.note || "")}</textarea>
+    </div>
+    <div class="modal-field">
+      <label>Move to group</label>
+      <select id="modal-link-group">
+        ${data.groups.map((g) => `<option value="${g.id}" ${g.id === groupId ? "selected" : ""}>${esc(g.name)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-save">Save</button>
+    </div>`);
+
+  overlay.querySelector("#modal-link-name").focus();
+
+  overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#modal-save").addEventListener("click", () => {
+    const nameEl = overlay.querySelector("#modal-link-name");
+    const urlEl = overlay.querySelector("#modal-link-url");
+    const name = nameEl.value.trim();
+    const url = urlEl.value.trim();
+    const note = overlay.querySelector("#modal-link-note").value.trim();
+    const newGroupId = overlay.querySelector("#modal-link-group").value;
+    if (!name) { showFieldError(nameEl, "Name is required"); return; }
+    if (!url) { showFieldError(urlEl, "URL is required"); return; }
+    if (!isValidUrl(url)) { showFieldError(urlEl, "Enter a valid URL (https://...)"); return; }
+
+    link.name = name;
+    link.url = url;
+    link.note = note || undefined;
+
+    if (newGroupId !== groupId) {
+      group.links = group.links.filter((l) => l.id !== linkId);
+      const target = data.groups.find((g) => g.id === newGroupId);
+      if (target) target.links.push(link);
+    }
+
+    save();
+    render(document.getElementById("search-input").value);
+    overlay.remove();
+  });
+}
+
+function showSaveTabModal(title, url) {
+  if (data.groups.length === 0) {
+    const group = {
+      id: uid(),
+      name: "Unsorted",
+      color: GROUP_COLORS[0],
+      collapsed: false,
+      links: [],
+    };
+    data.groups.push(group);
+    save();
+  }
+
+  const overlay = showModal(`
+    <h2>Save Current Tab</h2>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="modal-link-name" value="${esc(title)}">
+    </div>
+    <div class="modal-field">
+      <label>URL</label>
+      <input type="url" id="modal-link-url" value="${esc(url)}">
+    </div>
+    <div class="modal-field">
+      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
+      <textarea id="modal-link-note" placeholder="e.g. user: admin / pass: ****" rows="2"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>Group</label>
+      <select id="modal-link-group">
+        ${data.groups.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-save">Save</button>
+    </div>`);
+
+  overlay.querySelector("#modal-link-name").focus();
+  overlay.querySelector("#modal-link-name").select();
+
+  overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#modal-save").addEventListener("click", () => {
+    const nameEl = overlay.querySelector("#modal-link-name");
+    const urlEl = overlay.querySelector("#modal-link-url");
+    const name = nameEl.value.trim();
+    const linkUrl = urlEl.value.trim();
+    const note = overlay.querySelector("#modal-link-note").value.trim();
+    const groupId = overlay.querySelector("#modal-link-group").value;
+    if (!name) { showFieldError(nameEl, "Name is required"); return; }
+    if (!linkUrl) { showFieldError(urlEl, "URL is required"); return; }
+    if (!isValidUrl(linkUrl)) { showFieldError(urlEl, "Enter a valid URL (https://...)"); return; }
+
+    const group = data.groups.find((g) => g.id === groupId);
+    if (!group) return;
+    const link = { id: uid(), name, url: linkUrl };
+    if (note) link.note = note;
+    group.links.push(link);
+    save();
+    render();
+    overlay.remove();
+  });
+}
+
+// ── Export / Import ──
+
+function exportData() {
+  const output = {
+    exportedAt: new Date().toISOString(),
+    version: "1.0",
+    totalGroups: data.groups.length,
+    totalLinks: data.groups.reduce((s, g) => s + g.links.length, 0),
+    groups: data.groups.map((g) => ({
+      name: g.name,
+      color: g.color,
+      links: g.links.map((l) => {
+        const o = { name: l.name, url: l.url };
+        if (l.note) o.note = l.note;
+        return o;
+      }),
+    })),
+  };
+
+  downloadJSON(output, "dev-links-export.json");
+}
+
+function exportGroup(group) {
+  const output = {
+    exportedAt: new Date().toISOString(),
+    version: "1.0",
+    groups: [
+      {
+        name: group.name,
+        color: group.color,
+        links: group.links.map((l) => {
+          const o = { name: l.name, url: l.url };
+          if (l.note) o.note = l.note;
+          return o;
+        }),
+      },
+    ],
+  };
+
+  const safeName = group.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  downloadJSON(output, `dev-links-${safeName}.json`);
+}
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
