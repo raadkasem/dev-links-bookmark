@@ -125,9 +125,6 @@ function render(filter = "") {
                     ${hasCreds(l) ? `<button class="link-action-btn link-creds-toggle" data-link="${l.id}" title="Show credentials">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                     </button>` : ""}
-                    ${l.note ? `<button class="link-action-btn link-note-toggle" data-link="${l.id}" title="Show note">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                    </button>` : ""}
                     <button class="link-action-btn link-open-btn" data-url="${esc(l.url)}" title="Open">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </button>
@@ -139,12 +136,6 @@ function render(filter = "") {
                     </button>` : ""}
                   </div>
                 </div>
-                ${l.note ? `<div class="link-note hidden" data-note-for="${l.id}">
-                  <div class="link-note-content">${esc(l.note)}</div>
-                  <button class="link-note-copy" data-copy="${esc(l.note)}" title="Copy note">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  </button>
-                </div>` : ""}
                 ${hasCreds(l) ? `<div class="link-creds hidden" data-creds-for="${l.id}">
                   ${l.username ? `<div class="cred-row">
                     <span class="cred-label">User</span>
@@ -405,23 +396,6 @@ function attachGroupEvents() {
 
       save();
       render(document.getElementById("search-input").value);
-    });
-  });
-
-  // Note toggle
-  document.querySelectorAll(".link-note-toggle").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const noteEl = document.querySelector(`.link-note[data-note-for="${btn.dataset.link}"]`);
-      if (noteEl) noteEl.classList.toggle("hidden");
-    });
-  });
-
-  // Note copy
-  document.querySelectorAll(".link-note-copy").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      copyWithFeedback(btn, btn.dataset.copy);
     });
   });
 
@@ -751,7 +725,7 @@ function showImportModal(groups) {
         color: g.color || GROUP_COLORS[0],
         collapsed: false,
         locked: false,
-        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.note) o.note = l.note; return o; }),
+        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; return o; }),
       }));
     } else {
       for (const g of groups) {
@@ -761,7 +735,7 @@ function showImportModal(groups) {
           color: g.color || GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
           collapsed: false,
           locked: false,
-          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.note) o.note = l.note; return o; }),
+          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; return o; }),
         });
       }
     }
@@ -785,7 +759,7 @@ function showAddLinkModal(groupId) {
     </div>
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+      Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
     </div>
     <div id="modal-creds-section" class="modal-creds-section hidden">
       <div class="modal-field">
@@ -798,11 +772,7 @@ function showAddLinkModal(groupId) {
       </div>
       <div class="modal-field">
         <label>Branch</label>
-        <input type="text" id="modal-link-branch" placeholder="e.g. develop">
-      </div>
-      <div class="modal-field">
-        <label>Note</label>
-        <textarea id="modal-link-note" placeholder="Any extra info..." rows="2"></textarea>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop" list="branch-suggestions">
       </div>
     </div>
     <div class="modal-actions">
@@ -820,7 +790,6 @@ function showAddLinkModal(groupId) {
   overlay.querySelector("#modal-save").addEventListener("click", () => {
     const name = nameInput.value.trim();
     const url = urlInput.value.trim();
-    const note = overlay.querySelector("#modal-link-note").value.trim();
     const username = overlay.querySelector("#modal-link-username").value.trim();
     const password = overlay.querySelector("#modal-link-password").value.trim();
     const branch = overlay.querySelector("#modal-link-branch").value.trim();
@@ -830,7 +799,6 @@ function showAddLinkModal(groupId) {
     const group = data.groups.find((g) => g.id === groupId);
     if (!group) return;
     const link = { id: uid(), name, url };
-    if (note) link.note = note;
     if (username) link.username = username;
     if (password) link.password = password;
     if (branch) link.branch = branch;
@@ -863,9 +831,9 @@ function showEditLinkModal(groupId, linkId) {
     </div>
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+      Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
     </div>
-    <div id="modal-creds-section" class="modal-creds-section ${hasCreds(link) || link.note ? "" : "hidden"}">
+    <div id="modal-creds-section" class="modal-creds-section ${hasCreds(link) ? "" : "hidden"}">
       <div class="modal-field">
         <label>Username / Email</label>
         <input type="text" id="modal-link-username" value="${esc(link.username || "")}">
@@ -876,11 +844,7 @@ function showEditLinkModal(groupId, linkId) {
       </div>
       <div class="modal-field">
         <label>Branch</label>
-        <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}">
-      </div>
-      <div class="modal-field">
-        <label>Note</label>
-        <textarea id="modal-link-note" rows="2">${esc(link.note || "")}</textarea>
+        <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}" list="branch-suggestions">
       </div>
     </div>
     <div class="modal-field">
@@ -903,7 +867,6 @@ function showEditLinkModal(groupId, linkId) {
     const urlEl = overlay.querySelector("#modal-link-url");
     const name = nameEl.value.trim();
     const url = urlEl.value.trim();
-    const note = overlay.querySelector("#modal-link-note").value.trim();
     const username = overlay.querySelector("#modal-link-username").value.trim();
     const password = overlay.querySelector("#modal-link-password").value.trim();
     const branch = overlay.querySelector("#modal-link-branch").value.trim();
@@ -914,7 +877,6 @@ function showEditLinkModal(groupId, linkId) {
 
     link.name = name;
     link.url = url;
-    link.note = note || undefined;
     link.username = username || undefined;
     link.password = password || undefined;
     link.branch = branch || undefined;
@@ -956,7 +918,7 @@ function showSaveTabModal(title, url) {
     </div>
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+      Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
     </div>
     <div id="modal-creds-section" class="modal-creds-section hidden">
       <div class="modal-field">
@@ -969,11 +931,7 @@ function showSaveTabModal(title, url) {
       </div>
       <div class="modal-field">
         <label>Branch</label>
-        <input type="text" id="modal-link-branch" placeholder="e.g. develop">
-      </div>
-      <div class="modal-field">
-        <label>Note</label>
-        <textarea id="modal-link-note" placeholder="Any extra info..." rows="2"></textarea>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop" list="branch-suggestions">
       </div>
     </div>
     <div class="modal-field">
@@ -997,7 +955,6 @@ function showSaveTabModal(title, url) {
     const urlEl = overlay.querySelector("#modal-link-url");
     const name = nameEl.value.trim();
     const linkUrl = urlEl.value.trim();
-    const note = overlay.querySelector("#modal-link-note").value.trim();
     const username = overlay.querySelector("#modal-link-username").value.trim();
     const password = overlay.querySelector("#modal-link-password").value.trim();
     const branch = overlay.querySelector("#modal-link-branch").value.trim();
@@ -1036,7 +993,6 @@ function exportData() {
         if (l.username) o.username = l.username;
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
-        if (l.note) o.note = l.note;
         return o;
       }),
     })),

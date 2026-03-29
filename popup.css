@@ -629,13 +629,15 @@ h1 em {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 0;
+  padding: 10px 0;
+  margin-top: 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
   transition: color 0.15s;
+  border-top: 1px solid var(--border-light);
 }
 
 .modal-section-toggle:hover {
@@ -655,11 +657,18 @@ h1 em {
 }
 
 .modal-creds-section {
-  padding-left: 4px;
+  padding: 10px 0 6px 14px;
   border-left: 2px solid var(--border-light);
-  margin-left: 6px;
-  margin-bottom: 8px;
+  margin: 4px 0 10px 6px;
   animation: fadeSlideIn 0.15s ease;
+}
+
+.modal-creds-section .modal-field {
+  margin-bottom: 10px;
+}
+
+.modal-creds-section .modal-field:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Add link row ── */
