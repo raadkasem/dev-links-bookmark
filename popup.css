@@ -651,6 +651,15 @@ h1 em {
   background: #15803D;
 }
 
+.cred-autofill.cred-autofill-failed {
+  background: var(--red);
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+}
+
+.cred-autofill.cred-autofill-failed:hover {
+  background: #B91C1C;
+}
+
 /* ── Modal credentials section ── */
 .modal-section-toggle {
   display: flex;
