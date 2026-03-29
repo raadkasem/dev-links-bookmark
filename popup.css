@@ -630,7 +630,7 @@ h1 em {
   align-items: center;
   gap: 6px;
   padding: 10px 0;
-  margin-top: 4px;
+  margin: 4px 0 10px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
