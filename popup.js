@@ -768,7 +768,6 @@ function showImportModal(groups) {
   overlay.querySelector("#import-replace").addEventListener("click", () => { doImport("replace"); });
 
   function doImport(mode) {
-
     if (mode === "replace") {
       data.groups = groups.map((g) => ({
         id: uid(),
@@ -794,7 +793,7 @@ function showImportModal(groups) {
     save();
     render();
     overlay.remove();
-  });
+  }
 }
 
 function showAddLinkModal(groupId) {
