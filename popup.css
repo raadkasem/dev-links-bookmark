@@ -637,7 +637,8 @@ h1 em {
   cursor: pointer;
   user-select: none;
   transition: color 0.15s;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-section-toggle:hover {
