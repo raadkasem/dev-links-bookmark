@@ -153,9 +153,15 @@ h1 em {
   box-shadow: 0 0 0 3px rgba(109, 91, 208, 0.08), var(--shadow-sm);
 }
 
-/* ── Save current tab ── */
+/* ── Action row ── */
+.action-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
 .save-tab-btn {
-  width: 100%;
+  flex: 1;
   padding: 9px;
   background: var(--accent-soft);
   border: 1px dashed #C4B5FD;
@@ -170,7 +176,6 @@ h1 em {
   justify-content: center;
   gap: 6px;
   transition: all 0.15s;
-  margin-bottom: 14px;
 }
 
 .save-tab-btn:hover {
@@ -514,6 +519,149 @@ h1 em {
   color: #92400E !important;
 }
 
+/* ── Credentials card ── */
+.link-creds {
+  padding: 4px 14px 8px 46px;
+  animation: fadeSlideIn 0.15s ease;
+}
+
+.link-creds.hidden {
+  display: none;
+}
+
+.link-creds-toggle {
+  color: var(--accent) !important;
+}
+
+.link-creds-toggle:hover {
+  background: var(--accent-soft) !important;
+}
+
+.cred-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.cred-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  width: 42px;
+  flex-shrink: 0;
+}
+
+.cred-value {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Monaco, monospace;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.cred-password {
+  letter-spacing: 1px;
+}
+
+.cred-branch {
+  color: var(--accent);
+}
+
+.cred-copy,
+.cred-reveal {
+  background: none;
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.cred-copy:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cred-reveal:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.cred-autofill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.25);
+}
+
+.cred-autofill:hover {
+  background: #15803D;
+}
+
+/* ── Modal credentials section ── */
+.modal-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.modal-section-toggle:hover {
+  color: var(--text);
+}
+
+.modal-section-toggle svg {
+  transition: transform 0.2s;
+}
+
+.modal-section-toggle.open svg {
+  transform: rotate(180deg);
+}
+
+.modal-creds-section.hidden {
+  display: none;
+}
+
+.modal-creds-section {
+  padding-left: 4px;
+  border-left: 2px solid var(--border-light);
+  margin-left: 6px;
+  margin-bottom: 8px;
+  animation: fadeSlideIn 0.15s ease;
+}
+
 /* ── Add link row ── */
 .add-link-row {
   padding: 6px 12px 8px 30px;
@@ -541,8 +689,7 @@ h1 em {
 
 /* ── Add group button ── */
 .add-group-btn {
-  width: 100%;
-  padding: 9px;
+  padding: 9px 14px;
   background: var(--surface);
   border: 1px dashed var(--border);
   border-radius: 8px;
@@ -556,7 +703,7 @@ h1 em {
   justify-content: center;
   gap: 6px;
   transition: all 0.15s;
-  margin-bottom: 14px;
+  white-space: nowrap;
 }
 
 .add-group-btn:hover {

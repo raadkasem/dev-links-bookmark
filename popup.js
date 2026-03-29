@@ -47,6 +47,10 @@ function showFieldError(input, msg) {
   }, { once: true });
 }
 
+function hasCreds(l) {
+  return l.username || l.password || l.branch;
+}
+
 function faviconUrl(url) {
   try {
     const u = new URL(url);
@@ -118,6 +122,9 @@ function render(filter = "") {
                     <div class="link-url">${esc(l.url)}</div>
                   </div>
                   <div class="link-actions">
+                    ${hasCreds(l) ? `<button class="link-action-btn link-creds-toggle" data-link="${l.id}" title="Show credentials">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    </button>` : ""}
                     ${l.note ? `<button class="link-action-btn link-note-toggle" data-link="${l.id}" title="Show note">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     </button>` : ""}
@@ -137,6 +144,28 @@ function render(filter = "") {
                   <button class="link-note-copy" data-copy="${esc(l.note)}" title="Copy note">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   </button>
+                </div>` : ""}
+                ${hasCreds(l) ? `<div class="link-creds hidden" data-creds-for="${l.id}">
+                  ${l.username ? `<div class="cred-row">
+                    <span class="cred-label">User</span>
+                    <span class="cred-value">${esc(l.username)}</span>
+                    <button class="cred-copy" data-copy="${esc(l.username)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>` : ""}
+                  ${l.password ? `<div class="cred-row">
+                    <span class="cred-label">Pass</span>
+                    <span class="cred-value cred-password" data-pw="${esc(l.password)}">••••••••</span>
+                    <button class="cred-reveal" title="Reveal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    <button class="cred-copy" data-copy="${esc(l.password)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>` : ""}
+                  ${l.branch ? `<div class="cred-row">
+                    <span class="cred-label">Branch</span>
+                    <span class="cred-value cred-branch">${esc(l.branch)}</span>
+                    <button class="cred-copy" data-copy="${esc(l.branch)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>` : ""}
+                  ${l.username || l.password ? `<button class="cred-autofill" data-group="${group.id}" data-link="${l.id}" title="Autofill current page">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Autofill
+                  </button>` : ""}
                 </div>` : ""}
               </div>`
               )
@@ -392,13 +421,112 @@ function attachGroupEvents() {
   document.querySelectorAll(".link-note-copy").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(btn.dataset.copy).then(() => {
-        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-        setTimeout(() => {
-          btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-        }, 1500);
-      });
+      copyWithFeedback(btn, btn.dataset.copy);
     });
+  });
+
+  // Credentials toggle
+  document.querySelectorAll(".link-creds-toggle").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const el = document.querySelector(`.link-creds[data-creds-for="${btn.dataset.link}"]`);
+      if (el) el.classList.toggle("hidden");
+    });
+  });
+
+  // Credentials copy
+  document.querySelectorAll(".cred-copy").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyWithFeedback(btn, btn.dataset.copy);
+    });
+  });
+
+  // Password reveal
+  document.querySelectorAll(".cred-reveal").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const valEl = btn.parentElement.querySelector(".cred-password");
+      if (!valEl) return;
+      const isHidden = valEl.textContent === "••••••••";
+      valEl.textContent = isHidden ? valEl.dataset.pw : "••••••••";
+      btn.innerHTML = isHidden
+        ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    });
+  });
+
+  // Autofill
+  document.querySelectorAll(".cred-autofill").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const group = data.groups.find((g) => g.id === btn.dataset.group);
+      if (!group) return;
+      const link = group.links.find((l) => l.id === btn.dataset.link);
+      if (!link) return;
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: (username, password) => {
+            const userSelectors = 'input[type="email"], input[type="text"][name*="user"], input[type="text"][name*="email"], input[type="text"][name*="login"], input[name*="username"], input[autocomplete="username"], input[autocomplete="email"]';
+            const passSelectors = 'input[type="password"]';
+
+            if (username) {
+              const userInput = document.querySelector(userSelectors);
+              if (userInput) {
+                userInput.value = username;
+                userInput.dispatchEvent(new Event("input", { bubbles: true }));
+                userInput.dispatchEvent(new Event("change", { bubbles: true }));
+              }
+            }
+            if (password) {
+              const passInput = document.querySelector(passSelectors);
+              if (passInput) {
+                passInput.value = password;
+                passInput.dispatchEvent(new Event("input", { bubbles: true }));
+                passInput.dispatchEvent(new Event("change", { bubbles: true }));
+              }
+            }
+          },
+          args: [link.username || "", link.password || ""],
+        });
+
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Filled`;
+        setTimeout(() => {
+          btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Autofill`;
+        }, 1500);
+      } catch {
+        btn.textContent = "Failed";
+        setTimeout(() => {
+          btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Autofill`;
+        }, 1500);
+      }
+    });
+  });
+}
+
+function setupCredsToggle(overlay) {
+  const toggle = overlay.querySelector("#modal-creds-toggle");
+  const section = overlay.querySelector("#modal-creds-section");
+  if (!toggle || !section) return;
+  toggle.addEventListener("click", () => {
+    section.classList.toggle("hidden");
+    toggle.classList.toggle("open");
+  });
+  if (!section.classList.contains("hidden")) {
+    toggle.classList.add("open");
+  }
+}
+
+function copyWithFeedback(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(() => { btn.innerHTML = orig; }, 1500);
   });
 }
 
@@ -623,7 +751,7 @@ function showImportModal(groups) {
         color: g.color || GROUP_COLORS[0],
         collapsed: false,
         locked: false,
-        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.note) o.note = l.note; return o; }),
+        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.note) o.note = l.note; return o; }),
       }));
     } else {
       for (const g of groups) {
@@ -633,7 +761,7 @@ function showImportModal(groups) {
           color: g.color || GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
           collapsed: false,
           locked: false,
-          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.note) o.note = l.note; return o; }),
+          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.note) o.note = l.note; return o; }),
         });
       }
     }
@@ -655,25 +783,47 @@ function showAddLinkModal(groupId) {
       <label>URL</label>
       <input type="url" id="modal-link-url" placeholder="https://...">
     </div>
-    <div class="modal-field">
-      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
-      <textarea id="modal-link-note" placeholder="e.g. user: admin / pass: ****" rows="2"></textarea>
+    <div class="modal-section-toggle" id="modal-creds-toggle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+    </div>
+    <div id="modal-creds-section" class="modal-creds-section hidden">
+      <div class="modal-field">
+        <label>Username / Email</label>
+        <input type="text" id="modal-link-username" placeholder="admin@example.com">
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="modal-link-password" placeholder="••••••••">
+      </div>
+      <div class="modal-field">
+        <label>Branch</label>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop">
+      </div>
+      <div class="modal-field">
+        <label>Note</label>
+        <textarea id="modal-link-note" placeholder="Any extra info..." rows="2"></textarea>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
       <button class="modal-btn primary" id="modal-save">Add</button>
     </div>`);
 
+  setupCredsToggle(overlay);
+
   const nameInput = overlay.querySelector("#modal-link-name");
   const urlInput = overlay.querySelector("#modal-link-url");
-  const noteInput = overlay.querySelector("#modal-link-note");
   nameInput.focus();
 
   overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
   overlay.querySelector("#modal-save").addEventListener("click", () => {
     const name = nameInput.value.trim();
     const url = urlInput.value.trim();
-    const note = noteInput.value.trim();
+    const note = overlay.querySelector("#modal-link-note").value.trim();
+    const username = overlay.querySelector("#modal-link-username").value.trim();
+    const password = overlay.querySelector("#modal-link-password").value.trim();
+    const branch = overlay.querySelector("#modal-link-branch").value.trim();
     if (!name) { showFieldError(nameInput, "Name is required"); return; }
     if (!url) { showFieldError(urlInput, "URL is required"); return; }
     if (!isValidUrl(url)) { showFieldError(urlInput, "Enter a valid URL (https://...)"); return; }
@@ -681,6 +831,9 @@ function showAddLinkModal(groupId) {
     if (!group) return;
     const link = { id: uid(), name, url };
     if (note) link.note = note;
+    if (username) link.username = username;
+    if (password) link.password = password;
+    if (branch) link.branch = branch;
     group.links.push(link);
     save();
     render(document.getElementById("search-input").value);
@@ -708,9 +861,27 @@ function showEditLinkModal(groupId, linkId) {
       <label>URL</label>
       <input type="url" id="modal-link-url" value="${esc(link.url)}">
     </div>
-    <div class="modal-field">
-      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
-      <textarea id="modal-link-note" rows="2">${esc(link.note || "")}</textarea>
+    <div class="modal-section-toggle" id="modal-creds-toggle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+    </div>
+    <div id="modal-creds-section" class="modal-creds-section ${hasCreds(link) || link.note ? "" : "hidden"}">
+      <div class="modal-field">
+        <label>Username / Email</label>
+        <input type="text" id="modal-link-username" value="${esc(link.username || "")}">
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="modal-link-password" value="${esc(link.password || "")}">
+      </div>
+      <div class="modal-field">
+        <label>Branch</label>
+        <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}">
+      </div>
+      <div class="modal-field">
+        <label>Note</label>
+        <textarea id="modal-link-note" rows="2">${esc(link.note || "")}</textarea>
+      </div>
     </div>
     <div class="modal-field">
       <label>Move to group</label>
@@ -723,6 +894,7 @@ function showEditLinkModal(groupId, linkId) {
       <button class="modal-btn primary" id="modal-save">Save</button>
     </div>`);
 
+  setupCredsToggle(overlay);
   overlay.querySelector("#modal-link-name").focus();
 
   overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
@@ -732,6 +904,9 @@ function showEditLinkModal(groupId, linkId) {
     const name = nameEl.value.trim();
     const url = urlEl.value.trim();
     const note = overlay.querySelector("#modal-link-note").value.trim();
+    const username = overlay.querySelector("#modal-link-username").value.trim();
+    const password = overlay.querySelector("#modal-link-password").value.trim();
+    const branch = overlay.querySelector("#modal-link-branch").value.trim();
     const newGroupId = overlay.querySelector("#modal-link-group").value;
     if (!name) { showFieldError(nameEl, "Name is required"); return; }
     if (!url) { showFieldError(urlEl, "URL is required"); return; }
@@ -740,6 +915,9 @@ function showEditLinkModal(groupId, linkId) {
     link.name = name;
     link.url = url;
     link.note = note || undefined;
+    link.username = username || undefined;
+    link.password = password || undefined;
+    link.branch = branch || undefined;
 
     if (newGroupId !== groupId) {
       group.links = group.links.filter((l) => l.id !== linkId);
@@ -776,9 +954,27 @@ function showSaveTabModal(title, url) {
       <label>URL</label>
       <input type="url" id="modal-link-url" value="${esc(url)}">
     </div>
-    <div class="modal-field">
-      <label>Note <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
-      <textarea id="modal-link-note" placeholder="e.g. user: admin / pass: ****" rows="2"></textarea>
+    <div class="modal-section-toggle" id="modal-creds-toggle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      Credentials & Notes <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+    </div>
+    <div id="modal-creds-section" class="modal-creds-section hidden">
+      <div class="modal-field">
+        <label>Username / Email</label>
+        <input type="text" id="modal-link-username" placeholder="admin@example.com">
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="modal-link-password" placeholder="••••••••">
+      </div>
+      <div class="modal-field">
+        <label>Branch</label>
+        <input type="text" id="modal-link-branch" placeholder="e.g. develop">
+      </div>
+      <div class="modal-field">
+        <label>Note</label>
+        <textarea id="modal-link-note" placeholder="Any extra info..." rows="2"></textarea>
+      </div>
     </div>
     <div class="modal-field">
       <label>Group</label>
@@ -791,6 +987,7 @@ function showSaveTabModal(title, url) {
       <button class="modal-btn primary" id="modal-save">Save</button>
     </div>`);
 
+  setupCredsToggle(overlay);
   overlay.querySelector("#modal-link-name").focus();
   overlay.querySelector("#modal-link-name").select();
 
@@ -801,6 +998,9 @@ function showSaveTabModal(title, url) {
     const name = nameEl.value.trim();
     const linkUrl = urlEl.value.trim();
     const note = overlay.querySelector("#modal-link-note").value.trim();
+    const username = overlay.querySelector("#modal-link-username").value.trim();
+    const password = overlay.querySelector("#modal-link-password").value.trim();
+    const branch = overlay.querySelector("#modal-link-branch").value.trim();
     const groupId = overlay.querySelector("#modal-link-group").value;
     if (!name) { showFieldError(nameEl, "Name is required"); return; }
     if (!linkUrl) { showFieldError(urlEl, "URL is required"); return; }
@@ -809,6 +1009,9 @@ function showSaveTabModal(title, url) {
     const group = data.groups.find((g) => g.id === groupId);
     if (!group) return;
     const link = { id: uid(), name, url: linkUrl };
+    if (username) link.username = username;
+    if (password) link.password = password;
+    if (branch) link.branch = branch;
     if (note) link.note = note;
     group.links.push(link);
     save();
@@ -830,6 +1033,9 @@ function exportData() {
       color: g.color,
       links: g.links.map((l) => {
         const o = { name: l.name, url: l.url };
+        if (l.username) o.username = l.username;
+        if (l.password) o.password = l.password;
+        if (l.branch) o.branch = l.branch;
         if (l.note) o.note = l.note;
         return o;
       }),
