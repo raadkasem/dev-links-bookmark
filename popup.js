@@ -1034,7 +1034,6 @@ function showSaveTabModal(title, url) {
     if (username) link.username = username;
     if (password) link.password = password;
     if (branch) link.branch = branch;
-    if (note) link.note = note;
     group.links.push(link);
     save();
     render();
