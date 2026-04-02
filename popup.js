@@ -434,7 +434,15 @@ function attachGroupEvents() {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const el = document.querySelector(`.link-creds[data-creds-for="${btn.dataset.link}"]`);
-      if (el) el.classList.toggle("hidden");
+      if (el) {
+        el.classList.toggle("hidden");
+        if (!el.classList.contains("hidden")) {
+          setTimeout(() => {
+            const autofill = el.querySelector(".cred-autofill");
+            (autofill || el.lastElementChild).scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 50);
+        }
+      }
     });
   });
 

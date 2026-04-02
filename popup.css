@@ -208,7 +208,6 @@ h1 em {
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
   transition: box-shadow 0.15s;
   animation: fadeSlideIn 0.2s ease;
 }
@@ -230,6 +229,7 @@ h1 em {
   gap: 8px;
   user-select: none;
   transition: background 0.1s;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .group-header:hover {
