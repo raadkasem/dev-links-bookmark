@@ -22,7 +22,7 @@ Chrome extension to organize your developer links into groups — save, search, 
 - Inline credentials card — click any link to expand, with copy buttons per field
 - Autofill button — injects credentials into the current page's login form
 - Code snippets per link — repeater field for storing commands (Docker, CLI, etc.) with multiline support
-- Each snippet has an optional label and a one-click copy button
+- Each snippet has a one-click copy button
 - Separate `</>` toggle icon to expand/collapse snippets independently from credentials
 - Save current tab to any group with one click
 - Search across all groups, links, and URLs
@@ -57,14 +57,8 @@ Chrome extension to organize your developer links into groups — save, search, 
           "password": "****",
           "branch": "main",
           "snippets": [
-            {
-              "label": "Start containers",
-              "code": "docker-compose up -d"
-            },
-            {
-              "label": "",
-              "code": "docker logs -f app"
-            }
+            { "code": "docker-compose up -d" },
+            { "code": "docker logs -f app" }
           ]
         }
       ]

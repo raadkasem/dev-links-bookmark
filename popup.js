@@ -148,7 +148,6 @@ function render(filter = "") {
                 </div>
                 ${hasSnippets(l) ? `<div class="link-snippets hidden" data-snippets-for="${l.id}">
                   ${l.snippets.map((s) => `<div class="snippet-row">
-                    ${s.label ? `<span class="snippet-label">${esc(s.label)}</span>` : ""}
                     <pre class="snippet-code">${esc(s.code)}</pre>
                     <button class="snippet-copy" data-copy="${esc(s.code)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                   </div>`).join("")}
@@ -336,7 +335,7 @@ function attachGroupEvents() {
       if (link.username) clone.username = link.username;
       if (link.password) clone.password = link.password;
       if (link.branch) clone.branch = link.branch;
-      if (link.snippets) clone.snippets = link.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code }));
+      if (link.snippets) clone.snippets = link.snippets.map((s) => ({ id: uid(), code: s.code }));
       const idx = group.links.findIndex((l) => l.id === btn.dataset.link);
       group.links.splice(idx + 1, 0, clone);
       save();
@@ -626,14 +625,13 @@ function setupSnippetsToggle(overlay) {
   });
 }
 
-function addSnippetRow(container, label = "", code = "") {
+function addSnippetRow(container, code = "") {
   const row = document.createElement("div");
   row.className = "snippet-repeater-row";
   row.innerHTML = `
-    <input type="text" class="snippet-row-label" placeholder="Label (optional)" value="${esc(label)}">
     <textarea class="snippet-row-code" placeholder="e.g. docker-compose up -d" rows="2">${esc(code)}</textarea>
-    <button type="button" class="snippet-row-remove" title="Remove">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <button type="button" class="snippet-row-remove" title="Remove snippet">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
     </button>`;
   row.querySelector(".snippet-row-remove").addEventListener("click", () => row.remove());
   container.appendChild(row);
@@ -646,8 +644,7 @@ function collectSnippets(overlay) {
   rows.forEach((row) => {
     const code = row.querySelector(".snippet-row-code").value.trim();
     if (!code) return;
-    const label = row.querySelector(".snippet-row-label").value.trim();
-    snippets.push({ id: uid(), label, code });
+    snippets.push({ id: uid(), code });
   });
   return snippets;
 }
@@ -662,16 +659,14 @@ function snippetsSectionHTML(snippets) {
       <div id="snippet-repeater">
         ${(snippets || []).map((s) => `
           <div class="snippet-repeater-row" data-prefilled>
-            <input type="text" class="snippet-row-label" placeholder="Label (optional)" value="${esc(s.label || "")}">
             <textarea class="snippet-row-code" placeholder="e.g. docker-compose up -d" rows="2">${esc(s.code)}</textarea>
-            <button type="button" class="snippet-row-remove" title="Remove">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button type="button" class="snippet-row-remove" title="Remove snippet">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </div>`).join("")}
       </div>
-      <button type="button" class="snippet-add-btn" id="modal-add-snippet">
+      <button type="button" class="snippet-add-btn" id="modal-add-snippet" title="Add snippet">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add snippet
       </button>
     </div>`;
 }
@@ -777,7 +772,7 @@ function showGroupMenu(btn, groupId) {
         if (l.username) o.username = l.username;
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
-        if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code }));
+        if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), code: s.code }));
         return o;
       }),
     };
@@ -944,7 +939,7 @@ function showImportModal(groups) {
         color: g.color || GROUP_COLORS[0],
         collapsed: false,
         locked: false,
-        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code })); return o; }),
+        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), code: s.code })); return o; }),
       }));
     } else {
       for (const g of groups) {
@@ -954,7 +949,7 @@ function showImportModal(groups) {
           color: g.color || GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
           collapsed: false,
           locked: false,
-          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code })); return o; }),
+          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), code: s.code })); return o; }),
         });
       }
     }
@@ -1240,7 +1235,7 @@ function exportData() {
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
         if (l.note) o.note = l.note;
-        if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ label: s.label || "", code: s.code }));
+        if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ code: s.code }));
         return o;
       }),
     })),
@@ -1263,7 +1258,7 @@ function exportGroup(group) {
           if (l.password) o.password = l.password;
           if (l.branch) o.branch = l.branch;
           if (l.note) o.note = l.note;
-          if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ label: s.label || "", code: s.code }));
+          if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ code: s.code }));
           return o;
         }),
       },
