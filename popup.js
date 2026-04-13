@@ -128,6 +128,9 @@ function render(filter = "") {
                     <button class="link-action-btn link-open-btn" data-url="${esc(l.url)}" title="Open">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </button>
+                    <button class="link-action-btn" data-action="duplicate-link" data-group="${group.id}" data-link="${l.id}" title="Duplicate">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
                     ${!group.locked ? `<button class="link-action-btn" data-action="edit-link" data-group="${group.id}" data-link="${l.id}" title="Edit">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
@@ -304,6 +307,25 @@ function attachGroupEvents() {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       showEditLinkModal(btn.dataset.group, btn.dataset.link);
+    });
+  });
+
+  // Duplicate link
+  document.querySelectorAll('[data-action="duplicate-link"]').forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const group = data.groups.find((g) => g.id === btn.dataset.group);
+      if (!group) return;
+      const link = group.links.find((l) => l.id === btn.dataset.link);
+      if (!link) return;
+      const clone = { id: uid(), name: link.name + " (copy)", url: link.url };
+      if (link.username) clone.username = link.username;
+      if (link.password) clone.password = link.password;
+      if (link.branch) clone.branch = link.branch;
+      const idx = group.links.findIndex((l) => l.id === btn.dataset.link);
+      group.links.splice(idx + 1, 0, clone);
+      save();
+      render(document.getElementById("search-input").value);
     });
   });
 
@@ -580,6 +602,10 @@ function showGroupMenu(btn, groupId) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Export group
     </button>
+    <button class="group-menu-item" data-action="duplicate">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Duplicate group
+    </button>
     <div class="group-menu-sep"></div>
     <button class="group-menu-item" data-action="toggle-lock">
       ${isLocked
@@ -624,6 +650,28 @@ function showGroupMenu(btn, groupId) {
   menu.querySelector('[data-action="export-group"]').addEventListener("click", () => {
     menu.remove();
     exportGroup(group);
+  });
+
+  menu.querySelector('[data-action="duplicate"]').addEventListener("click", () => {
+    menu.remove();
+    const clone = {
+      id: uid(),
+      name: group.name + " (copy)",
+      color: group.color,
+      collapsed: false,
+      locked: false,
+      links: group.links.map((l) => {
+        const o = { id: uid(), name: l.name, url: l.url };
+        if (l.username) o.username = l.username;
+        if (l.password) o.password = l.password;
+        if (l.branch) o.branch = l.branch;
+        return o;
+      }),
+    };
+    const idx = data.groups.findIndex((g) => g.id === groupId);
+    data.groups.splice(idx + 1, 0, clone);
+    save();
+    render(document.getElementById("search-input").value);
   });
 
   menu.querySelector('[data-action="toggle-lock"]').addEventListener("click", () => {
@@ -1065,6 +1113,7 @@ function exportData() {
         if (l.username) o.username = l.username;
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
+        if (l.note) o.note = l.note;
         return o;
       }),
     })),
@@ -1083,6 +1132,9 @@ function exportGroup(group) {
         color: group.color,
         links: group.links.map((l) => {
           const o = { name: l.name, url: l.url };
+          if (l.username) o.username = l.username;
+          if (l.password) o.password = l.password;
+          if (l.branch) o.branch = l.branch;
           if (l.note) o.note = l.note;
           return o;
         }),
