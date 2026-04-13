@@ -146,6 +146,13 @@ function render(filter = "") {
                     </button>` : ""}
                   </div>
                 </div>
+                ${hasSnippets(l) ? `<div class="link-snippets hidden" data-snippets-for="${l.id}">
+                  ${l.snippets.map((s) => `<div class="snippet-row">
+                    ${s.label ? `<span class="snippet-label">${esc(s.label)}</span>` : ""}
+                    <pre class="snippet-code">${esc(s.code)}</pre>
+                    <button class="snippet-copy" data-copy="${esc(s.code)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>`).join("")}
+                </div>` : ""}
                 ${hasCreds(l) ? `<div class="link-creds hidden" data-creds-for="${l.id}">
                   ${l.username ? `<div class="cred-row">
                     <span class="cred-label">User</span>
@@ -169,13 +176,6 @@ function render(filter = "") {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Autofill
                   </button>` : ""}
-                </div>` : ""}
-                ${hasSnippets(l) ? `<div class="link-snippets hidden" data-snippets-for="${l.id}">
-                  ${l.snippets.map((s) => `<div class="snippet-row">
-                    ${s.label ? `<span class="snippet-label">${esc(s.label)}</span>` : ""}
-                    <pre class="snippet-code">${esc(s.code)}</pre>
-                    <button class="snippet-copy" data-copy="${esc(s.code)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                  </div>`).join("")}
                 </div>` : ""}
               </div>`
               )
@@ -976,6 +976,7 @@ function showAddLinkModal(groupId) {
       <label>URL</label>
       <input type="url" id="modal-link-url" placeholder="https://...">
     </div>
+    ${snippetsSectionHTML()}
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
@@ -999,14 +1000,13 @@ function showAddLinkModal(groupId) {
         <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
-    ${snippetsSectionHTML()}
     <div class="modal-actions">
       <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
       <button class="modal-btn primary" id="modal-save">Add</button>
     </div>`);
 
-  setupCredsToggle(overlay);
   setupSnippetsToggle(overlay);
+  setupCredsToggle(overlay);
 
   const nameInput = overlay.querySelector("#modal-link-name");
   const urlInput = overlay.querySelector("#modal-link-url");
@@ -1057,6 +1057,7 @@ function showEditLinkModal(groupId, linkId) {
       <label>URL</label>
       <input type="url" id="modal-link-url" value="${esc(link.url)}">
     </div>
+    ${snippetsSectionHTML(link.snippets)}
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
@@ -1080,7 +1081,6 @@ function showEditLinkModal(groupId, linkId) {
         <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}" list="branch-suggestions">
       </div>
     </div>
-    ${snippetsSectionHTML(link.snippets)}
     <div class="modal-field">
       <label>Move to group</label>
       <select id="modal-link-group">
@@ -1092,9 +1092,9 @@ function showEditLinkModal(groupId, linkId) {
       <button class="modal-btn primary" id="modal-save">Save</button>
     </div>`);
 
-  setupCredsToggle(overlay);
   setupSnippetsToggle(overlay);
   wirePrefilledSnippetRemoves(overlay);
+  setupCredsToggle(overlay);
   overlay.querySelector("#modal-link-name").focus();
 
   overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
@@ -1154,6 +1154,7 @@ function showSaveTabModal(title, url) {
       <label>URL</label>
       <input type="url" id="modal-link-url" value="${esc(url)}">
     </div>
+    ${snippetsSectionHTML()}
     <div class="modal-section-toggle" id="modal-creds-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       Credentials <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
@@ -1177,7 +1178,6 @@ function showSaveTabModal(title, url) {
         <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
-    ${snippetsSectionHTML()}
     <div class="modal-field">
       <label>Group</label>
       <select id="modal-link-group">
@@ -1189,8 +1189,8 @@ function showSaveTabModal(title, url) {
       <button class="modal-btn primary" id="modal-save">Save</button>
     </div>`);
 
-  setupCredsToggle(overlay);
   setupSnippetsToggle(overlay);
+  setupCredsToggle(overlay);
   overlay.querySelector("#modal-link-name").focus();
   overlay.querySelector("#modal-link-name").select();
 
