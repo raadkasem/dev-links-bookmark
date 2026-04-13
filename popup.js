@@ -51,6 +51,10 @@ function hasCreds(l) {
   return l.username || l.password || l.branch;
 }
 
+function hasSnippets(l) {
+  return l.snippets && l.snippets.length > 0;
+}
+
 function faviconUrl(url) {
   try {
     const u = new URL(url);
@@ -122,6 +126,9 @@ function render(filter = "") {
                     <div class="link-url">${esc(l.url)}</div>
                   </div>
                   <div class="link-actions">
+                    ${hasSnippets(l) ? `<button class="link-action-btn link-snippets-toggle" data-link="${l.id}" title="Show code snippets">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </button>` : ""}
                     ${hasCreds(l) ? `<button class="link-action-btn link-creds-toggle" data-link="${l.id}" title="Show credentials">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                     </button>` : ""}
@@ -162,6 +169,13 @@ function render(filter = "") {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Autofill
                   </button>` : ""}
+                </div>` : ""}
+                ${hasSnippets(l) ? `<div class="link-snippets hidden" data-snippets-for="${l.id}">
+                  ${l.snippets.map((s) => `<div class="snippet-row">
+                    ${s.label ? `<span class="snippet-label">${esc(s.label)}</span>` : ""}
+                    <pre class="snippet-code">${esc(s.code)}</pre>
+                    <button class="snippet-copy" data-copy="${esc(s.code)}" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  </div>`).join("")}
                 </div>` : ""}
               </div>`
               )
@@ -322,6 +336,7 @@ function attachGroupEvents() {
       if (link.username) clone.username = link.username;
       if (link.password) clone.password = link.password;
       if (link.branch) clone.branch = link.branch;
+      if (link.snippets) clone.snippets = link.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code }));
       const idx = group.links.findIndex((l) => l.id === btn.dataset.link);
       group.links.splice(idx + 1, 0, clone);
       save();
@@ -451,6 +466,30 @@ function attachGroupEvents() {
     });
   });
 
+  // Snippets toggle
+  document.querySelectorAll(".link-snippets-toggle").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const el = document.querySelector(`.link-snippets[data-snippets-for="${btn.dataset.link}"]`);
+      if (el) {
+        el.classList.toggle("hidden");
+        if (!el.classList.contains("hidden")) {
+          setTimeout(() => {
+            el.lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 50);
+        }
+      }
+    });
+  });
+
+  // Snippets copy
+  document.querySelectorAll(".snippet-copy").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyWithFeedback(btn, btn.dataset.copy);
+    });
+  });
+
   // Credentials toggle
   document.querySelectorAll(".link-creds-toggle").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -570,6 +609,79 @@ function setupCredsToggle(overlay) {
   }
 }
 
+function setupSnippetsToggle(overlay) {
+  const toggle = overlay.querySelector("#modal-snippets-toggle");
+  const section = overlay.querySelector("#modal-snippets-section");
+  if (!toggle || !section) return;
+  toggle.addEventListener("click", () => {
+    section.classList.toggle("hidden");
+    toggle.classList.toggle("open");
+  });
+  if (!section.classList.contains("hidden")) {
+    toggle.classList.add("open");
+  }
+
+  overlay.querySelector("#modal-add-snippet").addEventListener("click", () => {
+    addSnippetRow(overlay.querySelector("#snippet-repeater"));
+  });
+}
+
+function addSnippetRow(container, label = "", code = "") {
+  const row = document.createElement("div");
+  row.className = "snippet-repeater-row";
+  row.innerHTML = `
+    <input type="text" class="snippet-row-label" placeholder="Label (optional)" value="${esc(label)}">
+    <textarea class="snippet-row-code" placeholder="e.g. docker-compose up -d" rows="2">${esc(code)}</textarea>
+    <button type="button" class="snippet-row-remove" title="Remove">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>`;
+  row.querySelector(".snippet-row-remove").addEventListener("click", () => row.remove());
+  container.appendChild(row);
+  return row;
+}
+
+function collectSnippets(overlay) {
+  const rows = overlay.querySelectorAll(".snippet-repeater-row");
+  const snippets = [];
+  rows.forEach((row) => {
+    const code = row.querySelector(".snippet-row-code").value.trim();
+    if (!code) return;
+    const label = row.querySelector(".snippet-row-label").value.trim();
+    snippets.push({ id: uid(), label, code });
+  });
+  return snippets;
+}
+
+function snippetsSectionHTML(snippets) {
+  return `
+    <div class="modal-section-toggle" id="modal-snippets-toggle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      Code Snippets <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span>
+    </div>
+    <div id="modal-snippets-section" class="modal-snippets-section ${snippets && snippets.length ? "" : "hidden"}">
+      <div id="snippet-repeater">
+        ${(snippets || []).map((s) => `
+          <div class="snippet-repeater-row" data-prefilled>
+            <input type="text" class="snippet-row-label" placeholder="Label (optional)" value="${esc(s.label || "")}">
+            <textarea class="snippet-row-code" placeholder="e.g. docker-compose up -d" rows="2">${esc(s.code)}</textarea>
+            <button type="button" class="snippet-row-remove" title="Remove">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`).join("")}
+      </div>
+      <button type="button" class="snippet-add-btn" id="modal-add-snippet">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add snippet
+      </button>
+    </div>`;
+}
+
+function wirePrefilledSnippetRemoves(overlay) {
+  overlay.querySelectorAll('.snippet-repeater-row[data-prefilled] .snippet-row-remove').forEach((btn) => {
+    btn.addEventListener("click", () => btn.closest(".snippet-repeater-row").remove());
+  });
+}
+
 function copyWithFeedback(btn, text) {
   navigator.clipboard.writeText(text).then(() => {
     const orig = btn.innerHTML;
@@ -665,6 +777,7 @@ function showGroupMenu(btn, groupId) {
         if (l.username) o.username = l.username;
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
+        if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code }));
         return o;
       }),
     };
@@ -831,7 +944,7 @@ function showImportModal(groups) {
         color: g.color || GROUP_COLORS[0],
         collapsed: false,
         locked: false,
-        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; return o; }),
+        links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code })); return o; }),
       }));
     } else {
       for (const g of groups) {
@@ -841,7 +954,7 @@ function showImportModal(groups) {
           color: g.color || GROUP_COLORS[data.groups.length % GROUP_COLORS.length],
           collapsed: false,
           locked: false,
-          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; return o; }),
+          links: g.links.map((l) => { const o = { id: uid(), name: l.name, url: l.url }; if (l.username) o.username = l.username; if (l.password) o.password = l.password; if (l.branch) o.branch = l.branch; if (l.snippets) o.snippets = l.snippets.map((s) => ({ id: uid(), label: s.label || "", code: s.code })); return o; }),
         });
       }
     }
@@ -886,12 +999,14 @@ function showAddLinkModal(groupId) {
         <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
+    ${snippetsSectionHTML()}
     <div class="modal-actions">
       <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
       <button class="modal-btn primary" id="modal-save">Add</button>
     </div>`);
 
   setupCredsToggle(overlay);
+  setupSnippetsToggle(overlay);
 
   const nameInput = overlay.querySelector("#modal-link-name");
   const urlInput = overlay.querySelector("#modal-link-url");
@@ -913,6 +1028,8 @@ function showAddLinkModal(groupId) {
     if (username) link.username = username;
     if (password) link.password = password;
     if (branch) link.branch = branch;
+    const snippets = collectSnippets(overlay);
+    if (snippets.length) link.snippets = snippets;
     group.links.push(link);
     save();
     render(document.getElementById("search-input").value);
@@ -963,6 +1080,7 @@ function showEditLinkModal(groupId, linkId) {
         <input type="text" id="modal-link-branch" value="${esc(link.branch || "")}" list="branch-suggestions">
       </div>
     </div>
+    ${snippetsSectionHTML(link.snippets)}
     <div class="modal-field">
       <label>Move to group</label>
       <select id="modal-link-group">
@@ -975,6 +1093,8 @@ function showEditLinkModal(groupId, linkId) {
     </div>`);
 
   setupCredsToggle(overlay);
+  setupSnippetsToggle(overlay);
+  wirePrefilledSnippetRemoves(overlay);
   overlay.querySelector("#modal-link-name").focus();
 
   overlay.querySelector("#modal-cancel").addEventListener("click", () => overlay.remove());
@@ -996,6 +1116,8 @@ function showEditLinkModal(groupId, linkId) {
     link.username = username || undefined;
     link.password = password || undefined;
     link.branch = branch || undefined;
+    const snippets = collectSnippets(overlay);
+    link.snippets = snippets.length ? snippets : undefined;
 
     if (newGroupId !== groupId) {
       group.links = group.links.filter((l) => l.id !== linkId);
@@ -1055,6 +1177,7 @@ function showSaveTabModal(title, url) {
         <input type="text" id="modal-link-branch" placeholder="e.g. develop" autocomplete="off" list="branch-suggestions">
       </div>
     </div>
+    ${snippetsSectionHTML()}
     <div class="modal-field">
       <label>Group</label>
       <select id="modal-link-group">
@@ -1067,6 +1190,7 @@ function showSaveTabModal(title, url) {
     </div>`);
 
   setupCredsToggle(overlay);
+  setupSnippetsToggle(overlay);
   overlay.querySelector("#modal-link-name").focus();
   overlay.querySelector("#modal-link-name").select();
 
@@ -1090,6 +1214,8 @@ function showSaveTabModal(title, url) {
     if (username) link.username = username;
     if (password) link.password = password;
     if (branch) link.branch = branch;
+    const snippets = collectSnippets(overlay);
+    if (snippets.length) link.snippets = snippets;
     group.links.push(link);
     save();
     render();
@@ -1114,6 +1240,7 @@ function exportData() {
         if (l.password) o.password = l.password;
         if (l.branch) o.branch = l.branch;
         if (l.note) o.note = l.note;
+        if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ label: s.label || "", code: s.code }));
         return o;
       }),
     })),
@@ -1136,6 +1263,7 @@ function exportGroup(group) {
           if (l.password) o.password = l.password;
           if (l.branch) o.branch = l.branch;
           if (l.note) o.note = l.note;
+          if (l.snippets && l.snippets.length) o.snippets = l.snippets.map((s) => ({ label: s.label || "", code: s.code }));
           return o;
         }),
       },

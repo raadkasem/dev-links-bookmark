@@ -21,6 +21,9 @@ Chrome extension to organize your developer links into groups — save, search, 
 - Branch field with autocomplete suggestions (main, develop, staging, production, etc.)
 - Inline credentials card — click any link to expand, with copy buttons per field
 - Autofill button — injects credentials into the current page's login form
+- Code snippets per link — repeater field for storing commands (Docker, CLI, etc.) with multiline support
+- Each snippet has an optional label and a one-click copy button
+- Separate `</>` toggle icon to expand/collapse snippets independently from credentials
 - Save current tab to any group with one click
 - Search across all groups, links, and URLs
 - Open all links in a group at once
@@ -52,7 +55,17 @@ Chrome extension to organize your developer links into groups — save, search, 
           "url": "https://dashboard.project.com",
           "username": "admin@project.com",
           "password": "****",
-          "branch": "main"
+          "branch": "main",
+          "snippets": [
+            {
+              "label": "Start containers",
+              "code": "docker-compose up -d"
+            },
+            {
+              "label": "",
+              "code": "docker logs -f app"
+            }
+          ]
         }
       ]
     }
