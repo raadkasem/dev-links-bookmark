@@ -1,6 +1,7 @@
 # Dev Links Bookmark
 
-![Visitors](https://komarev.com/ghpvc/?username=raadkasem&repo=dev-links-bookmark&color=blueviolet&style=flat-square)
+![Repository views](https://komarev.com/ghpvc/?username=raadkasem-dev-links-bookmark&label=Repository+views&color=blueviolet&style=flat-square)
+![GitHub Downloads](https://img.shields.io/github/downloads/raadkasem/dev-links-bookmark/total?style=flat-square)
 
 Chrome extension to organize your developer links into groups — save, search, lock, and open them instantly.
 
