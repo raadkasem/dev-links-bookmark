@@ -21,24 +21,26 @@ Chrome extension to organize your developer links into groups — save, search, 
 - Credentials per link: username/email, password (masked with reveal toggle), repo/branch
 - Branch field with autocomplete suggestions (main, develop, staging, production, etc.)
 - Inline credentials card — click any link to expand, with copy buttons per field
-- Autofill button — injects credentials into the current page's login form
+- Autofill button — fills editable login fields only on the saved URL's exact origin (protocol, host and port)
 - Code snippets per link — repeater field for storing commands (Docker, CLI, etc.) with multiline support
 - Each snippet has a one-click copy button
 - Separate `</>` toggle icon to expand/collapse snippets independently from credentials
-- Save current tab to any group with one click
+- Save current HTTP/HTTPS tab to an unlocked group
 - Search across all groups, links, and URLs
-- Open all links in a group at once
+- Open all links in a group in background tabs
 - Drag and drop to reorder groups and links between groups
-- Lock groups to prevent accidental edits or deletions
+- Lock groups to prevent edits, deletions, link duplication and drag-and-drop changes
 - Delete protection — confirm dialog for links, type "Delete" for groups with links
 - Export all data or a single group as organized JSON
 - Export then Delete option for safe group removal
-- Import with Append or Replace mode (icon buttons)
+- Validated JSON import with Append or Replace mode (up to 10 MB); preserves lock/collapse state
 - Favicons auto-loaded for each link
 - Collapsible groups (accordion style)
 - Elegant light theme UI
 
 ## Export Format
+
+**Security:** credentials are stored locally and exported in **plain text**, not encrypted. The password below is only an example; actual exports contain the full saved password. Treat exports as sensitive files. Group locking prevents accidental changes; it is not encryption or access control. Favicons are requested from Google's favicon service using each link's hostname.
 
 ```json
 {
@@ -50,6 +52,8 @@ Chrome extension to organize your developer links into groups — save, search, 
     {
       "name": "Projects",
       "color": "#6D5BD0",
+      "collapsed": false,
+      "locked": false,
       "links": [
         {
           "name": "Dashboard",
@@ -74,6 +78,29 @@ Chrome extension to organize your developer links into groups — save, search, 
 2. Open `chrome://extensions`
 3. Enable **Developer mode**
 4. Click **Load unpacked** and select the project folder
+
+After updating, click **Reload** for Dev Links in `chrome://extensions`. No build step is needed. The extension uses only `storage`, `activeTab` and `scripting` permissions; it does not request access to all websites. Autofill requires opening the popup from the toolbar on the website you want to fill. Embedded cross-origin login forms and protected browser pages are not supported.
+
+## Development and checks
+
+Node.js 20 or newer is needed only for development; there are no runtime dependencies.
+
+```sh
+npm ci
+npm test
+npm run benchmark
+```
+
+The benchmark compares DOM rendering against `v1.1.1` using 500 links, three snippets per link and half the groups collapsed. Its jsdom timings are synthetic, not browser responsiveness measurements.
+
+For an isolated, headless Chromium smoke test using the real unpacked extension:
+
+```sh
+npx playwright-core install chromium
+npm run test:browser
+```
+
+The browser test uses its own temporary profile and fixture data, never your installed extension's storage. An existing Chromium-for-Testing binary can be selected with `CHROME_PATH`. Tests cover real extension storage, imports/exports, dialogs, locking and drag-and-drop. Toolbar-granted `activeTab` access and site-specific autofill should also be checked manually before publishing.
 
 ## License
 

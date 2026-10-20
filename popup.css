@@ -204,6 +204,7 @@ h1 em {
 }
 
 .group {
+  flex-shrink: 0;
   background: var(--surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
@@ -400,6 +401,7 @@ h1 em {
   background: var(--bg);
 }
 
+.group.dragging,
 .link-row.dragging {
   opacity: 0.4;
 }
@@ -444,7 +446,8 @@ h1 em {
   flex-shrink: 0;
 }
 
-.link-row:hover .link-actions {
+.link-row:hover .link-actions,
+.link-row:focus-within .link-actions {
   opacity: 1;
 }
 
@@ -831,6 +834,29 @@ h1 em {
   color: var(--text);
 }
 
+.modal p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.status-message {
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--red);
+  border-radius: 7px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.modal-field input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
 .modal-field {
   margin-bottom: 12px;
 }
@@ -918,6 +944,7 @@ h1 em {
 
 .modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
   margin-top: 16px;
@@ -943,6 +970,14 @@ h1 em {
 
 .modal-btn.primary:hover {
   background: var(--accent-hover);
+}
+
+.modal-btn.primary.danger {
+  background: var(--red);
+}
+
+.modal-btn.primary.warning {
+  background: var(--amber);
 }
 
 .modal-btn.primary:disabled {
