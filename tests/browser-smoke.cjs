@@ -5,7 +5,7 @@ const path = require("node:path");
 const { chromium } = require("playwright-core");
 const { fixture } = require("./helpers.cjs");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(process.env.EXTENSION_PATH || path.join(__dirname, ".."));
 
 (async () => {
   const tempRoot = path.join(os.tmpdir(), "opencode");

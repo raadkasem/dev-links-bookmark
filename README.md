@@ -1,9 +1,23 @@
 # Dev Links Bookmark
 
+[![Latest release](https://img.shields.io/github/v/release/raadkasem/dev-links-bookmark?style=flat-square)](https://github.com/raadkasem/dev-links-bookmark/releases/latest)
 ![Repository views](https://komarev.com/ghpvc/?username=raadkasem-dev-links-bookmark&label=Repository+views&color=blueviolet&style=flat-square)
 ![GitHub Downloads](https://img.shields.io/github/downloads/raadkasem/dev-links-bookmark/total?style=flat-square)
 
 Chrome extension to organize your developer links into groups — save, search, lock, and open them instantly.
+
+**Latest version: [v1.1.2](https://github.com/raadkasem/dev-links-bookmark/releases/tag/v1.1.2)** · [Download extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip)
+
+## What's new in v1.1.2
+
+- **Safer data handling:** validated imports, escaped user content, HTTP/HTTPS-only links, and recovery export for malformed saved data.
+- **Reliable saves:** failed storage writes keep previous data intact; dialogs stay open for retry and rapid changes are saved in order.
+- **Credentials and snippets:** preserve password whitespace, snippet indentation and unchanged line endings; improve copy/reveal feedback and retain legacy notes when copying or importing.
+- **Safer autofill:** exact-origin checks, editable login-field detection, framework-friendly input events, and accurate success/failure messages. Removed broad website and `tabs` permissions.
+- **Consistent locks and navigation:** prevent locked-group edits through duplication, moving, saving tabs and drag-and-drop; support drops into empty groups and preserve search filters after changes.
+- **Small UI fixes, not a redesign:** visible errors, keyboard navigation, Escape-to-close dialogs, accessible action buttons and properly wrapping delete-confirmation buttons.
+- **Faster rendering:** lazy details/collapsed groups, delegated events, cached search text and debounced search. A 500-link synthetic jsdom benchmark improved from 1,605 ms to 195 ms per render (about 8× faster), with 79% fewer DOM nodes; these are not real-browser timing guarantees.
+- **Regression coverage:** 41 automated tests plus an isolated Chromium smoke test of the real unpacked extension.
 
 ## Screenshots
 
@@ -42,12 +56,14 @@ Chrome extension to organize your developer links into groups — save, search, 
 
 **Security:** credentials are stored locally and exported in **plain text**, not encrypted. The password below is only an example; actual exports contain the full saved password. Treat exports as sensitive files. Group locking prevents accidental changes; it is not encryption or access control. Favicons are requested from Google's favicon service using each link's hostname.
 
+The JSON `version` field is the export schema version (`1.0`), independent of the extension release version.
+
 ```json
 {
   "exportedAt": "2026-03-30T12:00:00.000Z",
   "version": "1.0",
-  "totalGroups": 2,
-  "totalLinks": 5,
+  "totalGroups": 1,
+  "totalLinks": 1,
   "groups": [
     {
       "name": "Projects",
@@ -74,10 +90,10 @@ Chrome extension to organize your developer links into groups — save, search, 
 
 ## Install
 
-1. Clone or download this repo
+1. Download and extract the [v1.1.2 extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip), or clone this repo
 2. Open `chrome://extensions`
 3. Enable **Developer mode**
-4. Click **Load unpacked** and select the project folder
+4. Click **Load unpacked** and select the folder containing `manifest.json`
 
 After updating, click **Reload** for Dev Links in `chrome://extensions`. No build step is needed. The extension uses only `storage`, `activeTab` and `scripting` permissions; it does not request access to all websites. Autofill requires opening the popup from the toolbar on the website you want to fill. Embedded cross-origin login forms and protected browser pages are not supported.
 
@@ -100,7 +116,15 @@ npx playwright-core install chromium
 npm run test:browser
 ```
 
-The browser test uses its own temporary profile and fixture data, never your installed extension's storage. An existing Chromium-for-Testing binary can be selected with `CHROME_PATH`. Tests cover real extension storage, imports/exports, dialogs, locking and drag-and-drop. Toolbar-granted `activeTab` access and site-specific autofill should also be checked manually before publishing.
+The browser test uses its own temporary profile and fixture data, never your installed extension's storage. An existing Chromium-for-Testing binary can be selected with `CHROME_PATH`; set `EXTENSION_PATH` to test an extracted release ZIP instead of the working tree. Tests cover real extension storage, imports/exports, dialogs, locking and drag-and-drop. Toolbar-granted `activeTab` access and site-specific autofill should also be checked manually before publishing.
+
+## Release workflow
+
+- `main` tracks the latest stable, tagged release.
+- Develop fixes on `fix/*` or features on `feature/*` branches.
+- Prepare and validate each release on `release/<version>` (for example, `release/1.1.2`), updating `manifest.json` and this README.
+- Merge the completed release into `main`, tag that commit as `v<version>`, and push `main`, the release branch and the tag.
+- Publish a GitHub release with a ready-to-load ZIP containing only the extension files, README and license—not development dependencies or tests.
 
 ## License
 
