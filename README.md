@@ -6,22 +6,16 @@
 
 Chrome extension to organize your developer links into groups — save, search, lock, and open them instantly.
 
-**Latest version: [v1.1.2](https://github.com/raadkasem/dev-links-bookmark/releases/tag/v1.1.2)** · [Download extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip)
+**Latest version: [v1.2.0](https://github.com/raadkasem/dev-links-bookmark/releases/tag/v1.2.0)** · [Download extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.2.0/dev-links-v1.2.0.zip)
 
-## Unreleased
+## What's new in v1.2.0
 
 - **Export for 1Password:** choose JSON backup or a locally generated CSV from the export button. Includes all links, exact credentials, group names, branches, legacy notes and snippets. [Import instructions](#import-into-1password).
+- **Careful credential handling:** proper CSV quoting preserves Unicode, password whitespace and multiline snippets. The export dialog warns that files are unencrypted and should not be opened in a spreadsheet.
+- **Accessible export chooser:** keyboard focus, Escape/Cancel support and an empty-data state, without changing the main layout or requesting new permissions.
+- **Compatibility and checks:** existing JSON backups and group exports are unchanged; 50 automated tests and an isolated Chromium smoke test cover the extension and both download formats.
 
-## What's new in v1.1.2
-
-- **Safer data handling:** validated imports, escaped user content, HTTP/HTTPS-only links, and recovery export for malformed saved data.
-- **Reliable saves:** failed storage writes keep previous data intact; dialogs stay open for retry and rapid changes are saved in order.
-- **Credentials and snippets:** preserve password whitespace, snippet indentation and unchanged line endings; improve copy/reveal feedback and retain legacy notes when copying or importing.
-- **Safer autofill:** exact-origin checks, editable login-field detection, framework-friendly input events, and accurate success/failure messages. Removed broad website and `tabs` permissions.
-- **Consistent locks and navigation:** prevent locked-group edits through duplication, moving, saving tabs and drag-and-drop; support drops into empty groups and preserve search filters after changes.
-- **Small UI fixes, not a redesign:** visible errors, keyboard navigation, Escape-to-close dialogs, accessible action buttons and properly wrapping delete-confirmation buttons.
-- **Faster rendering:** lazy details/collapsed groups, delegated events, cached search text and debounced search. A 500-link synthetic jsdom benchmark improved from 1,605 ms to 195 ms per render (about 8× faster), with 79% fewer DOM nodes; these are not real-browser timing guarantees.
-- **Regression coverage:** 41 automated tests plus an isolated Chromium smoke test of the real unpacked extension.
+See [CHANGELOG.md](CHANGELOG.md) for earlier releases, including v1.1.2's safety fixes and rendering optimizations.
 
 ## Screenshots
 
@@ -50,7 +44,7 @@ Chrome extension to organize your developer links into groups — save, search, 
 - Lock groups to prevent edits, deletions, link duplication and drag-and-drop changes
 - Delete protection — confirm dialog for links, type "Delete" for groups with links
 - Export all data or a single group as organized JSON
-- Export for 1Password as CSV, with a plaintext-password warning (source checkout; not yet in the v1.1.2 ZIP)
+- Export for 1Password as CSV, with a plaintext-password warning
 - Export then Delete option for safe group removal
 - Validated JSON import with Append or Replace mode (up to 10 MB); preserves lock/collapse state
 - Favicons auto-loaded for each link
@@ -95,7 +89,7 @@ The JSON `version` field is the export schema version (`1.0`), independent of th
 
 ## Import into 1Password
 
-Available in the source checkout; the v1.1.2 release ZIP does not include this feature yet.
+Available in v1.2.0 and later. No 1Password API key or extension permission changes are needed.
 
 1. Click the header **Export** button, then **Export for 1Password**. Save `dev-links-1password.csv` somewhere private.
 2. Sign in to **1Password.com**, choose your name at the top right, then **Import data → CSV File**. Select the CSV and the destination vault.
@@ -109,12 +103,14 @@ CSV is generated locally without contacting 1Password or needing an API key. It 
 
 ## Install
 
-1. Download and extract the [v1.1.2 extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip), or clone this repo
+1. Download and extract the [v1.2.0 extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.2.0/dev-links-v1.2.0.zip), or clone this repo
 2. Open `chrome://extensions`
 3. Enable **Developer mode**
 4. Click **Load unpacked** and select the folder containing `manifest.json`
 
-After updating, click **Reload** for Dev Links in `chrome://extensions`. No build step is needed. The extension uses only `storage`, `activeTab` and `scripting` permissions; it does not request access to all websites. Autofill requires opening the popup from the toolbar on the website you want to fill. Embedded cross-origin login forms and protected browser pages are not supported.
+**Updating an unpacked installation:** export a JSON backup first, replace the extension files in the same installation folder, then click **Reload** for Dev Links in `chrome://extensions`. Do not remove the installed extension or load it from a different folder if you want to keep its existing storage.
+
+No build step is needed. The extension uses only `storage`, `activeTab` and `scripting` permissions; it does not request access to all websites. Autofill requires opening the popup from the toolbar on the website you want to fill. Embedded cross-origin login forms and protected browser pages are not supported.
 
 ## Development and checks
 
@@ -141,9 +137,9 @@ The browser test uses its own temporary profile and fixture data, never your ins
 
 - `main` tracks the latest stable, tagged release.
 - Develop fixes on `fix/*` or features on `feature/*` branches.
-- Prepare and validate each release on `release/<version>` (for example, `release/1.1.2`), updating `manifest.json` and this README.
+- Prepare and validate each release on `release/<version>` (for example, `release/1.2.0`), updating `manifest.json`, this README and `CHANGELOG.md`.
 - Merge the completed release into `main`, tag that commit as `v<version>`, and push `main`, the release branch and the tag.
-- Publish a GitHub release with a ready-to-load ZIP containing only the extension files, README and license—not development dependencies or tests.
+- Publish a GitHub release with a ready-to-load ZIP containing only the extension files, README, changelog and license—not development dependencies or tests. Run the browser smoke test against the extracted ZIP before publishing.
 
 ## License
 
