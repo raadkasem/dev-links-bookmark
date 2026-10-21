@@ -44,6 +44,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (stored?.devlinks != null) {
       const button = document.getElementById("export-btn");
       button.disabled = false;
+      button.title = "Export recovery JSON";
+      button.setAttribute("aria-label", button.title);
+      button.removeAttribute("aria-haspopup");
       button.addEventListener("click", () => downloadJSON({ devlinks: stored.devlinks }, "dev-links-recovery.json"));
     }
   }
@@ -284,7 +287,7 @@ function setupListeners() {
       showStatus(`Could not import this file. ${error instanceof SyntaxError ? "Invalid JSON." : error.message}`);
     } finally { event.target.value = ""; }
   });
-  document.getElementById("export-btn").addEventListener("click", () => exportData());
+  document.getElementById("export-btn").addEventListener("click", showExportModal);
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".group-menu, .group-menu-btn")) closeMenus();
   });
@@ -789,6 +792,47 @@ function showFieldError(input, message) {
 
 // ── Export / Import ──
 
+function showExportModal() {
+  const count = data.groups.reduce((sum, group) => sum + group.links.length, 0);
+  const overlay = showModal(`<h2>Export Links</h2>
+    <p>${count ? `Export all <strong>${count}</strong> saved link(s), including locked groups and links hidden by search.` : "There are no links to export. You can still download a JSON backup."}</p>
+    <div class="export-formats">
+      <button class="export-format" id="export-json">${icon("export", 18)}<span><span class="export-format-title">JSON backup</span><span class="export-format-desc">Restore your Dev Links groups and settings.</span></span></button>
+      <button class="export-format" id="export-1password" ${count ? "" : "disabled"}>${icon("key", 18)}<span><span class="export-format-title">Export for 1Password</span><span class="export-format-desc">CSV with credentials, group names, branches and snippets.</span></span></button>
+    </div>
+    <p class="export-warning"><strong>Unencrypted files contain saved passwords.</strong> Import the CSV directly into 1Password, not a spreadsheet. Delete it after verifying the import.</p>
+    <p>In 1Password.com, choose your name → Import data → CSV File, then label the columns.</p>
+    <div class="modal-actions"><button class="modal-btn secondary" id="modal-cancel">Cancel</button></div>`);
+  overlay.querySelector("#export-json").addEventListener("click", () => submitModal(overlay, exportData));
+  overlay.querySelector("#export-1password").addEventListener("click", () => submitModal(overlay, exportFor1Password));
+}
+
+function onePasswordCSV(groups) {
+  const rows = [["Title", "Website", "Username", "Password", "Notes"]];
+  for (const group of groups) {
+    for (const link of group.links) {
+      const notes = [`Group: ${group.name}`];
+      // Bookmark-only rows can be imported as Secure Notes without losing the URL.
+      if (!link.username && !link.password) notes.push(`Website: ${link.url}`);
+      if (link.branch) notes.push(`Branch: ${link.branch}`);
+      if (link.note) notes.push(`Notes:\n${link.note}`);
+      for (const [index, snippet] of (link.snippets || []).entries()) notes.push(`Snippet ${index + 1}:\n${snippet.code}`);
+      rows.push([link.name, link.url, link.username ?? "", link.password ?? "", notes.join("\n\n")]);
+    }
+  }
+  // Quote every field, escape embedded quotes and retain exact credential/code
+  // bytes. Spreadsheet formula prefixes must not be added to saved passwords.
+  return rows.map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(",")).join("\r\n") + "\r\n";
+}
+
+function exportFor1Password() {
+  if (!data.groups.some((group) => group.links.length)) {
+    showStatus("There are no links to export for 1Password.");
+    return false;
+  }
+  downloadFile(onePasswordCSV(data.groups), "dev-links-1password.csv", "text/csv;charset=utf-8");
+}
+
 function exportableGroup(group) {
   return {
     name: group.name, color: group.color, collapsed: group.collapsed, locked: group.locked,
@@ -815,7 +859,11 @@ function exportGroup(group) {
 }
 
 function downloadJSON(object, filename) {
-  const blob = new Blob([JSON.stringify(object, null, 2)], { type: "application/json" });
+  downloadFile(JSON.stringify(object, null, 2), filename, "application/json");
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

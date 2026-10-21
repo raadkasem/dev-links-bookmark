@@ -527,6 +527,7 @@ test("export/import roundtrip preserves lock and collapse state and exact values
 test("download URLs stay alive until the download can start", async (t) => {
   const app = await popup(t);
   app.click("#export-btn");
+  app.click("#export-json");
   assert.equal(app.calls.downloads[0].filename, "dev-links-export.json");
   assert.equal(app.calls.revocations.length, 0);
   assert.equal(app.query("a[download]"), null);

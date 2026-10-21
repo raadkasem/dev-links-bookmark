@@ -995,6 +995,73 @@ h1 em {
   background: var(--bg);
 }
 
+/* ── Export formats ── */
+.export-formats {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.export-format {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.export-format svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.export-format:not(:disabled):hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.export-format:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.export-format:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.export-format-title,
+.export-format-desc {
+  display: block;
+}
+
+.export-format-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.export-format-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.modal .export-warning {
+  padding: 10px;
+  border-radius: 7px;
+  background: var(--amber-soft);
+  color: var(--text);
+  font-size: 11.5px;
+}
+
 /* ── Import mode buttons ── */
 .import-mode-btns {
   display: flex;

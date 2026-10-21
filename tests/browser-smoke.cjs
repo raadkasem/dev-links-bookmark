@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
 const { chromium } = require("playwright-core");
-const { fixture } = require("./helpers.cjs");
+const { fixture, parseCSV } = require("./helpers.cjs");
 
 const root = path.resolve(process.env.EXTENSION_PATH || path.join(__dirname, ".."));
 
@@ -37,6 +37,9 @@ const root = path.resolve(process.env.EXTENSION_PATH || path.join(__dirname, "..
     });
     await page.goto(`chrome-extension://${id}/popup.html`);
     await page.waitForSelector(".empty-state");
+    await page.locator("#export-btn").click();
+    assert.equal(await page.locator("#export-1password").isDisabled(), true);
+    await page.keyboard.press("Escape");
     await page.evaluate((stored) => chrome.storage.local.set({ devlinks: stored }), fixture());
     await page.reload();
     await page.waitForSelector(".link-row");
@@ -85,11 +88,40 @@ const root = path.resolve(process.env.EXTENSION_PATH || path.join(__dirname, "..
 
     const downloadPromise = page.waitForEvent("download");
     await page.locator("#export-btn").click();
+    await page.locator("#export-json").click();
     const download = await downloadPromise;
+    assert.equal(download.suggestedFilename(), "dev-links-export.json");
+    await page.waitForSelector(".modal", { state: "detached" });
     const exported = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(exported.groups.length, 3);
     assert.equal(exported.groups[1].links[0].password, " secret ");
     assert.equal(exported.groups[1].links[0].snippets[0].code, fixture().groups[0].links[0].snippets[0].code);
+
+    await page.locator("#export-btn").click();
+    assert.match(await page.locator(".export-warning").textContent(), /Unencrypted.*passwords/);
+    assert.equal(await page.locator("#export-json").evaluate((button) => button === document.activeElement), true);
+    await page.keyboard.press("Shift+Tab");
+    assert.equal(await page.locator("#modal-cancel").evaluate((button) => button === document.activeElement), true);
+    await page.keyboard.press("Tab");
+    assert.equal(await page.locator("#export-json").evaluate((button) => button === document.activeElement), true);
+    const exportFits = await page.locator(".modal").evaluate((modal) => {
+      const box = modal.getBoundingClientRect();
+      return modal.scrollWidth === modal.clientWidth && Array.from(modal.querySelectorAll("button")).every((button) => {
+        const bounds = button.getBoundingClientRect();
+        return bounds.left >= box.left && bounds.right <= box.right && bounds.top >= box.top && bounds.bottom <= box.bottom;
+      });
+    });
+    assert.equal(exportFits, true, "Export options must fit the popup");
+    const csvDownloadPromise = page.waitForEvent("download");
+    await page.locator("#export-1password").click();
+    const csvDownload = await csvDownloadPromise;
+    assert.equal(csvDownload.suggestedFilename(), "dev-links-1password.csv");
+    const csv = parseCSV(await fs.readFile(await csvDownload.path(), "utf8"));
+    assert.deepEqual(csv[0], ["Title", "Website", "Username", "Password", "Notes"]);
+    assert.equal(csv.length, 2);
+    assert.deepEqual(csv[1].slice(0, 4), ['Dashboard "edited"', "https://example.com/login", "admin", " secret "]);
+    assert.equal(csv[1][4], `Group: Other\n\nBranch: main\n\nNotes:\nlegacy note\n\nSnippet 1:\n${fixture().groups[0].links[0].snippets[0].code}`);
+    await page.waitForSelector(".modal", { state: "detached" });
 
     await page.locator("#import-file").setInputFiles({ name: "roundtrip.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exported)) });
     await page.locator("#import-replace").click();
@@ -110,7 +142,7 @@ const root = path.resolve(process.env.EXTENSION_PATH || path.join(__dirname, "..
     assert.equal(await page.evaluate(async () => (await chrome.storage.local.get("devlinks")).devlinks.groups.length), 2);
     assert.deepEqual(errors, []);
     if (process.env.SCREENSHOT_PATH) await page.screenshot({ path: process.env.SCREENSHOT_PATH });
-    console.log("Chromium smoke passed: real MV3 storage/permissions, CRUD, locking, native drag-and-drop, import/export and dialog layout. No page or CSP errors.");
+    console.log("Chromium smoke passed: real MV3 storage/permissions, CRUD, locking, native drag-and-drop, JSON/1Password CSV downloads, dialog layout and keyboard focus. No page or CSP errors.");
   } finally {
     await context?.close();
     // Only the disposable profile created by this test is removed.

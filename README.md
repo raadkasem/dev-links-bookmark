@@ -8,6 +8,10 @@ Chrome extension to organize your developer links into groups — save, search, 
 
 **Latest version: [v1.1.2](https://github.com/raadkasem/dev-links-bookmark/releases/tag/v1.1.2)** · [Download extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip)
 
+## Unreleased
+
+- **Export for 1Password:** choose JSON backup or a locally generated CSV from the export button. Includes all links, exact credentials, group names, branches, legacy notes and snippets. [Import instructions](#import-into-1password).
+
 ## What's new in v1.1.2
 
 - **Safer data handling:** validated imports, escaped user content, HTTP/HTTPS-only links, and recovery export for malformed saved data.
@@ -46,6 +50,7 @@ Chrome extension to organize your developer links into groups — save, search, 
 - Lock groups to prevent edits, deletions, link duplication and drag-and-drop changes
 - Delete protection — confirm dialog for links, type "Delete" for groups with links
 - Export all data or a single group as organized JSON
+- Export for 1Password as CSV, with a plaintext-password warning (source checkout; not yet in the v1.1.2 ZIP)
 - Export then Delete option for safe group removal
 - Validated JSON import with Append or Replace mode (up to 10 MB); preserves lock/collapse state
 - Favicons auto-loaded for each link
@@ -88,6 +93,20 @@ The JSON `version` field is the export schema version (`1.0`), independent of th
 }
 ```
 
+## Import into 1Password
+
+Available in the source checkout; the v1.1.2 release ZIP does not include this feature yet.
+
+1. Click the header **Export** button, then **Export for 1Password**. Save `dev-links-1password.csv` somewhere private.
+2. Sign in to **1Password.com**, choose your name at the top right, then **Import data → CSV File**. Select the CSV and the destination vault.
+3. Review the rows. Choose **Login** for links with credentials, or **Secure Note** for bookmark-only links. If the column-header row appears as an item, choose **Ignore Row** for it.
+4. Label the columns **Title**, **Website**, **Username**, **Password**, and **Notes**. Bookmark-only URLs also appear in Notes, so they are kept when importing as Secure Notes; unused columns can be ignored for those rows.
+5. Finish the import and check the saved URLs, credentials and notes before deleting the unencrypted CSV.
+
+Each link becomes one row, including links in locked/collapsed groups and links hidden by search. Group names, branches, legacy notes and numbered snippets are stored in Notes. Empty groups, group colors, locks and collapse settings do not transfer; groups do not automatically become 1Password vaults or tags. This is a one-time export, not synchronization. Keep a JSON backup if you want to restore Dev Links itself.
+
+CSV is generated locally without contacting 1Password or needing an API key. It preserves Unicode, commas, quotes, password whitespace and snippet line endings. **Do not open or resave it in a spreadsheet app:** spreadsheets can alter credentials or interpret formula-like values. Protect the file from sharing or cloud backups, and delete it after verifying the import. See [1Password's CSV import guide](https://support.1password.com/import-1password-com/) for the current importer steps.
+
 ## Install
 
 1. Download and extract the [v1.1.2 extension ZIP](https://github.com/raadkasem/dev-links-bookmark/releases/download/v1.1.2/dev-links-v1.1.2.zip), or clone this repo
@@ -116,7 +135,7 @@ npx playwright-core install chromium
 npm run test:browser
 ```
 
-The browser test uses its own temporary profile and fixture data, never your installed extension's storage. An existing Chromium-for-Testing binary can be selected with `CHROME_PATH`; set `EXTENSION_PATH` to test an extracted release ZIP instead of the working tree. Tests cover real extension storage, imports/exports, dialogs, locking and drag-and-drop. Toolbar-granted `activeTab` access and site-specific autofill should also be checked manually before publishing.
+The browser test uses its own temporary profile and fixture data, never your installed extension's storage. An existing Chromium-for-Testing binary can be selected with `CHROME_PATH`; set `EXTENSION_PATH` to test an extracted release ZIP instead of the working tree. Tests cover real extension storage, JSON import/export, 1Password CSV downloads, dialog layout/keyboard focus, locking and drag-and-drop. These checks do not import into a live 1Password account. Toolbar-granted `activeTab` access and site-specific autofill should also be checked manually before publishing.
 
 ## Release workflow
 

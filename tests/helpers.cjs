@@ -20,7 +20,7 @@ async function createPopup(options = {}) {
   const dom = new JSDOM(options.html || html, { url: "https://extension.test/popup.html", runScripts: "outside-only", pretendToBeVisual: true, virtualConsole });
   const { window } = dom;
   let persisted = options.stored === undefined ? fixture() : options.stored;
-  const calls = { writes: [], tabs: [], scripts: [], copies: [], downloads: [], revocations: [], listeners: 0 };
+  const calls = { writes: [], tabs: [], scripts: [], copies: [], downloads: [], blobs: [], revocations: [], listeners: 0 };
   const storage = { fail: options.failWrite || false };
   window.structuredClone = structuredClone;
   window.HTMLElement.prototype.scrollIntoView = () => {};
@@ -33,7 +33,7 @@ async function createPopup(options = {}) {
     if (options.failCopy) throw new Error("Clipboard denied");
     calls.copies.push(text);
   } } });
-  window.URL.createObjectURL = () => "blob:test";
+  window.URL.createObjectURL = (blob) => { calls.blobs.push(blob); return "blob:test"; };
   window.URL.revokeObjectURL = (url) => calls.revocations.push(url);
   window.HTMLAnchorElement.prototype.click = function () { calls.downloads.push({ filename: this.download, url: this.href }); };
   window.chrome = {
@@ -88,7 +88,38 @@ async function createPopup(options = {}) {
   };
   return { window, document: window.document, query, click, change, settle, drag, calls, errors, storage,
     snapshot: () => structuredClone(window.__getData()), persisted: () => structuredClone(persisted),
+    downloadText: (index = 0) => new Promise((resolve, reject) => {
+      const reader = new window.FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(calls.blobs[index]);
+    }),
     close: () => window.close() };
 }
 
-module.exports = { createPopup, fixture, source, html };
+// Independent CSV reader for checking generated fields, including embedded CR/LF.
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", quoted = false;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (character === '"') {
+      if (quoted && text[index + 1] === '"') { field += '"'; index++; }
+      else quoted = !quoted;
+    } else if (!quoted && character === ",") {
+      row.push(field);
+      field = "";
+    } else if (!quoted && (character === "\r" || character === "\n")) {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      if (character === "\r" && text[index + 1] === "\n") index++;
+    } else field += character;
+  }
+  if (quoted) throw new Error("Unterminated CSV field");
+  if (row.length || field) rows.push([...row, field]);
+  return rows;
+}
+
+module.exports = { createPopup, fixture, source, html, parseCSV };
